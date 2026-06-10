@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aurora · Artistas</title>
+  <style>
+    :root {
+      --bg:    #000;
+      --text:  #f2f2f2;
+      --muted: #888;
+      --line:  #222;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    /* ── Topo: busca + nav ── */
+    .top {
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      border-bottom: 1px solid var(--line);
+      padding: 18px 20px 14px;
+      z-index: 10;
+    }
+    .nav {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 14px;
+      font-size: 12px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+    .nav a { color: var(--muted); transition: color .15s; }
+    .nav a:hover { color: var(--text); }
+    .nav a.active { color: var(--text); }
+
+    .search {
+      width: 100%;
+      max-width: 520px;
+      background: #111;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 11px 14px;
+      color: var(--text);
+      font: inherit;
+      font-size: 15px;
+      outline: none;
+    }
+    .search::placeholder { color: #555; }
+    .search:focus { border-color: #444; }
+    .count {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+    .count b { color: var(--text); }
+
+    /* ── Lista ── */
+    .list {
+      column-count: 4;
+      column-gap: 28px;
+      padding: 20px;
+    }
+    @media (max-width: 1100px) { .list { column-count: 3; } }
+    @media (max-width: 760px)  { .list { column-count: 2; column-gap: 18px; } }
+    @media (max-width: 480px)  { .list { column-count: 1; } }
+
+    .artist {
+      break-inside: avoid;
+      display: flex;
+      align-items: baseline;
+      gap: 7px;
+      padding: 6px 0;
+      line-height: 1.3;
+      border-bottom: 1px solid transparent;
+    }
+    .artist .nome {
+      font-size: 13.5px;
+      font-weight: 500;
+      letter-spacing: .02em;
+    }
+    .artist a.nome:hover { text-decoration: underline; text-underline-offset: 2px; }
+    .artist .ext { color: var(--muted); font-size: 10px; opacity: 0; transition: opacity .15s; }
+    .artist:hover .ext { opacity: 1; }
+    .artist .n {
+      font-size: 10px;
+      color: #5a5a5a;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: .02em;
+      flex-shrink: 0;
+    }
+
+    .empty { color: var(--muted); padding: 60px 20px; text-align: center; font-size: 14px; }
+    .spinner {
+      width: 24px; height: 24px;
+      border: 2px solid var(--line);
+      border-top-color: var(--text);
+      border-radius: 50%;
+      margin: 60px auto;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <div class="nav">
+      <a href="index.html">Galeria</a>
+      <a href="artistas.html" class="active">Artistas</a>
+    </div>
+    <input class="search" id="search" type="search" placeholder="Buscar artista…" autocomplete="off">
+    <div class="count" id="count"></div>
+  </div>
+
+  <div id="content"><div class="spinner"></div></div>
+
+  <script>
+    let ARTISTAS = []
+
+    async function carregar() {
+      try {
+        const r = await fetch('dados.json')
+        const d = await r.json()
+        const map = new Map()
+        for (const e of d.edicoes) {
+          if (!e.artist) continue
+          const nome = e.artist.trim()
+          const chave = nome.toLowerCase()
+          if (!map.has(chave)) map.set(chave, { nome, n: 0, url: null })
+          const a = map.get(chave)
+          a.n++
+          if (e.artist_url && !a.url) a.url = e.artist_url
+        }
+        ARTISTAS = [...map.values()].sort((a, b) =>
+          a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }))
+        document.getElementById('search').addEventListener('input', render)
+        render()
+      } catch (e) {
+        document.getElementById('content').innerHTML =
+          '<div class="empty">Erro ao carregar a lista.</div>'
+      }
+    }
+
+    function render() {
+      const termo = document.getElementById('search').value.trim().toLowerCase()
+      const lista = termo
+        ? ARTISTAS.filter(a => a.nome.toLowerCase().includes(termo))
+        : ARTISTAS
+
+      document.getElementById('count').innerHTML =
+        `<b>${lista.length}</b> ${lista.length === 1 ? 'artista' : 'artistas'}` +
+        (termo ? ` · de ${ARTISTAS.length}` : '')
+
+      const content = document.getElementById('content')
+      if (!lista.length) {
+        content.innerHTML = '<div class="empty">Nenhum artista encontrado.</div>'
+        return
+      }
+
+      content.innerHTML = '<div class="list">' + lista.map(a => {
+        const conta = a.n > 1 ? `<span class="n">${a.n}×</span>` : ''
+        const nome = a.url
+          ? `<a class="nome" href="${a.url}" target="_blank" rel="noopener">${a.nome}</a><span class="ext">↗</span>`
+          : `<span class="nome">${a.nome}</span>`
+        return `<div class="artist">${nome}${conta}</div>`
+      }).join('') + '</div>'
+    }
+
+    carregar()
+  </script>
+</body>
+</html>
