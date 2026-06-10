@@ -63,21 +63,26 @@
     .year-btn:hover { color: var(--text); }
     .year-btn.active { color: #000; background: var(--text); }
 
-    /* ── Mosaico ── */
+    /* ── Mosaico (colunas via flex p/ manter ordem cronológica em linha) ── */
     .mosaic {
-      column-count: 5;
-      column-gap: 10px;
+      display: flex;
+      gap: 10px;
       padding: 14px 10px 60px;
+      align-items: flex-start;
     }
-    @media (max-width: 1400px) { .mosaic { column-count: 4; } }
-    @media (max-width: 1000px) { .mosaic { column-count: 3; } }
-    @media (max-width: 680px)  { .mosaic { column-count: 2; padding: 10px 8px 40px; } }
+    .col {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    @media (max-width: 680px) {
+      .mosaic { gap: 8px; padding: 10px 8px 40px; }
+      .col { gap: 8px; }
+    }
 
-    .tile {
-      break-inside: avoid;
-      margin-bottom: 10px;
-      display: block;
-    }
+    .tile { display: block; }
     .tile img {
       width: 100%;
       display: block;
@@ -132,7 +137,16 @@
   <script>
     let DADOS = { edicoes: [], anos: [] }
     let anoAtivo = 'todos'
-    let LISTA = [], mostrados = 0
+    let LISTA = [], mostrados = 0, cols = []
+
+    // Re-renderiza se a largura mudar o nº de colunas
+    let resizeT = null, ultColCount = 0
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeT)
+      resizeT = setTimeout(() => {
+        if (DADOS.edicoes.length && colCount() !== ultColCount) render()
+      }, 200)
+    })
 
     const fmtData = iso => {
       if (!iso) return ''
@@ -177,10 +191,23 @@
         ? DADOS.edicoes
         : DADOS.edicoes.filter(e => String(e.year) === anoAtivo)
 
-      content.innerHTML = `<div class="mosaic" id="mosaic"></div><div id="sentinel" style="height:1px"></div>`
+      const n = colCount()
+      ultColCount = n
+      const colunas = Array.from({ length: n }, (_, i) => `<div class="col" data-c="${i}"></div>`).join('')
+      content.innerHTML = `<div class="mosaic" id="mosaic">${colunas}</div><div id="sentinel" style="height:1px"></div>`
+      cols = [...document.querySelectorAll('.col')]
       mostrados = 0
       appendBatch()
       observar()
+    }
+
+    // Nº de colunas conforme a largura (espelha os breakpoints do CSS antigo)
+    function colCount() {
+      const w = window.innerWidth
+      if (w > 1400) return 5
+      if (w > 1000) return 4
+      if (w > 680)  return 3
+      return 2
     }
 
     function tileHTML(e) {
@@ -201,13 +228,18 @@
       </${tag}>`
     }
 
-    // Renderiza em lotes (imagens do CDN são grandes)
+    // Renderiza em lotes (imagens do CDN são grandes).
+    // Distribui round-robin: tile global i vai pra coluna i % n.
+    // Assim a 1ª linha = as n mais recentes, da esquerda p/ direita.
     const BATCH = 40
     function appendBatch() {
-      const mosaic = document.getElementById('mosaic')
-      if (!mosaic) return
+      if (!cols.length) return
+      const n = cols.length
       const next = LISTA.slice(mostrados, mostrados + BATCH)
-      mosaic.insertAdjacentHTML('beforeend', next.map(tileHTML).join(''))
+      next.forEach((e, k) => {
+        const idx = mostrados + k
+        cols[idx % n].insertAdjacentHTML('beforeend', tileHTML(e))
+      })
       mostrados += next.length
     }
 
