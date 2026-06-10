@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aurora · Galeria</title>
+  <style>
+    :root {
+      --bg:    #000;
+      --text:  #f2f2f2;
+      --muted: #888;
+      --line:  #222;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    /* ── Filtro de anos (minimal) ── */
+    .years {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      padding: 20px 20px 16px;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 10;
+      border-bottom: 1px solid var(--line);
+    }
+    .year-btn {
+      padding: 5px 13px;
+      border: none;
+      background: transparent;
+      font: inherit;
+      font-size: 12px;
+      letter-spacing: .04em;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: 4px;
+      transition: color .15s, background .15s;
+    }
+    .year-btn:hover { color: var(--text); }
+    .year-btn.active { color: #000; background: var(--text); }
+
+    /* ── Mosaico ── */
+    .mosaic {
+      column-count: 5;
+      column-gap: 10px;
+      padding: 14px 10px 60px;
+    }
+    @media (max-width: 1400px) { .mosaic { column-count: 4; } }
+    @media (max-width: 1000px) { .mosaic { column-count: 3; } }
+    @media (max-width: 680px)  { .mosaic { column-count: 2; padding: 10px 8px 40px; } }
+
+    .tile {
+      break-inside: avoid;
+      margin-bottom: 10px;
+      display: block;
+    }
+    .tile img {
+      width: 100%;
+      display: block;
+      background: #111;
+    }
+    .tile-meta { padding: 7px 2px 4px; }
+    .tile-artist {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .03em;
+      line-height: 1.25;
+      color: var(--text);
+    }
+    .tile-artist.empty { color: var(--muted); font-weight: 400; }
+    .tile-info {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* ── Estados ── */
+    .state {
+      text-align: center;
+      padding: 80px 24px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .spinner {
+      width: 26px; height: 26px;
+      border: 2px solid var(--line);
+      border-top-color: var(--text);
+      border-radius: 50%;
+      margin: 0 auto 16px;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="years" id="years"></div>
+  <div id="content">
+    <div class="state"><div class="spinner"></div>Carregando…</div>
+  </div>
+
+  <script>
+    let DADOS = { edicoes: [], anos: [] }
+    let anoAtivo = 'todos'
+    let LISTA = [], mostrados = 0
+
+    const fmtData = iso => {
+      if (!iso) return ''
+      const d = new Date(iso)
+      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
+    }
+
+    async function carregar() {
+      try {
+        const r = await fetch('dados.json')
+        DADOS = await r.json()
+        render()
+      } catch (e) {
+        document.getElementById('content').innerHTML =
+          '<div class="state">Erro ao carregar a galeria.</div>'
+      }
+    }
+
+    function renderYears() {
+      const el = document.getElementById('years')
+      if (!DADOS.anos.length) { el.innerHTML = ''; return }
+      const total = DADOS.anos.reduce((s, a) => s + a.n, 0)
+      const btns = [`<button class="year-btn ${anoAtivo==='todos'?'active':''}" data-y="todos">Todos · ${total}</button>`]
+      for (const a of DADOS.anos) {
+        btns.push(`<button class="year-btn ${anoAtivo==String(a.year)?'active':''}" data-y="${a.year}">${a.year} · ${a.n}</button>`)
+      }
+      el.innerHTML = btns.join('')
+      el.querySelectorAll('.year-btn').forEach(b =>
+        b.onclick = () => { anoAtivo = b.dataset.y; render() })
+    }
+
+    function render() {
+      renderYears()
+      const content = document.getElementById('content')
+
+      if (!DADOS.edicoes.length) {
+        content.innerHTML = `<div class="state">A galeria está vazia.</div>`
+        return
+      }
+
+      LISTA = anoAtivo === 'todos'
+        ? DADOS.edicoes
+        : DADOS.edicoes.filter(e => String(e.year) === anoAtivo)
+
+      content.innerHTML = `<div class="mosaic" id="mosaic"></div><div id="sentinel" style="height:1px"></div>`
+      mostrados = 0
+      appendBatch()
+      observar()
+    }
+
+    function tileHTML(e) {
+      const artista = e.artist
+        ? `<div class="tile-artist">${e.artist}</div>`
+        : `<div class="tile-artist empty">Edição Aurora</div>`
+      const info = [e.art_year, fmtData(e.send_on)].filter(Boolean).join(' · ')
+      const href = e.artist_url || null
+      const tag = href ? 'a' : 'div'
+      const attrs = href ? `href="${href}" target="_blank" rel="noopener"` : ''
+      return `<${tag} class="tile" ${attrs}>
+        <img src="${e.image_url}" alt="${e.subject || ''}" loading="lazy"
+             onerror="this.closest('.tile').style.display='none'">
+        <div class="tile-meta">
+          ${artista}
+          <div class="tile-info">${info}</div>
+        </div>
+      </${tag}>`
+    }
+
+    // Renderiza em lotes (imagens do CDN são grandes)
+    const BATCH = 40
+    function appendBatch() {
+      const mosaic = document.getElementById('mosaic')
+      if (!mosaic) return
+      const next = LISTA.slice(mostrados, mostrados + BATCH)
+      mosaic.insertAdjacentHTML('beforeend', next.map(tileHTML).join(''))
+      mostrados += next.length
+    }
+
+    let io = null
+    function observar() {
+      if (io) io.disconnect()
+      const sentinel = document.getElementById('sentinel')
+      if (!sentinel) return
+      io = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting && mostrados < LISTA.length) appendBatch()
+      }, { rootMargin: '600px' })
+      io.observe(sentinel)
+    }
+
+    carregar()
+  </script>
+</body>
+</html>
