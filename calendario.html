@@ -130,7 +130,9 @@
     .inc-tit{font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
     .inc-date{background:var(--field);border:1px solid var(--line);border-radius:6px;color:var(--text);font:inherit;font-size:12.5px;padding:6px 10px;color-scheme:dark}
     .inc-status{font-size:11.5px;color:var(--muted)}
-    .inc-foot{padding:0 20px 22px;display:flex;justify-content:flex-end}
+    .inc-foot{padding:0 20px 22px;display:flex;justify-content:space-between;align-items:center}
+    .inc-del{background:none;border:none;color:var(--muted);font:inherit;font-size:12.5px;cursor:pointer;padding:8px 6px;border-radius:6px}
+    .inc-del:hover{color:#e0563a;background:#1a1212}
     #incSalvar{width:auto;padding:11px 30px;font-size:14px;transition:transform .12s,filter .12s,background .25s,border-color .25s}
     #incSalvar:hover{filter:brightness(1.08);transform:translateY(-1px)}
     #incSalvar:active{transform:scale(.96)}
@@ -189,7 +191,7 @@
         <button class="det-x" id="detClose">✕</button>
       </div>
       <div class="det-body" id="detBody"></div>
-      <div class="inc-foot"><button class="btn" id="incSalvar">💾 Salvar</button></div>
+      <div class="inc-foot"><button class="inc-del" id="incExcluir">🗑 Excluir</button><button class="btn" id="incSalvar">💾 Salvar</button></div>
     </div>
   </div>
 
@@ -439,6 +441,14 @@
     })
     document.getElementById('incDate').addEventListener('change',ev=>{if(editObj){editObj.data=ev.target.value;agendarInc()}})
     document.getElementById('incSalvar').onclick=async()=>{const b=document.getElementById('incSalvar');await salvarInc();b.classList.add('saved');setTimeout(()=>b.classList.remove('saved'),900)}
+    document.getElementById('incExcluir').onclick=async()=>{
+      if(!editObj)return
+      if(!confirm('Excluir esta edição do planejamento?'))return
+      clearTimeout(incTimer)
+      const idx=EDICOES.indexOf(editObj)
+      if(idx>=0){EDICOES.splice(idx,1);document.getElementById('incStatus').textContent='excluindo…';try{await ghPutJson()}catch{}}
+      editObj=null;document.getElementById('det').classList.add('hidden');render()
+    }
     document.getElementById('detClose').onclick=fecharInc
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('det').classList.contains('hidden'))fecharInc()})
 
