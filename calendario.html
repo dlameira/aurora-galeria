@@ -95,16 +95,8 @@
       <h2>Acessar o calendário</h2>
       <p>Cole o <b>token do GitHub</b> para ver o planejamento.</p>
       <div class="err" id="tokErr"></div>
-      <input type="password" id="tokInput" placeholder="github_pat_..." autocomplete="off">
+      <input type="password" id="tokInput" name="token" placeholder="github_pat_..." autocomplete="current-password">
       <button class="btn" id="tokSave">Entrar</button>
-      <details style="margin-top:14px"><summary style="font-size:12.5px;color:var(--muted);cursor:pointer">Como criar o token</summary>
-        <ol>
-          <li>Abra <a href="https://github.com/settings/personal-access-tokens/new" target="_blank">github.com/settings/personal-access-tokens/new</a></li>
-          <li><b>Only select repositories</b> → <b>aurora-planejamento</b></li>
-          <li><b>Repository permissions</b> → <b>Contents</b> → <b>Read-only</b> (ou Read and write)</li>
-          <li><b>Generate token</b> e cole aqui</li>
-        </ol>
-      </details>
     </div>
   </div>
 
@@ -220,7 +212,18 @@
     })
 
     // token
-    function abrir(erro){const ov=document.getElementById('overlay');ov.classList.remove('hidden');const e=document.getElementById('tokErr');if(erro){e.textContent=erro;e.style.display='block'}else e.style.display='none'}
+    function abrir(erro){
+      const ov=document.getElementById('overlay');ov.classList.remove('hidden')
+      const e=document.getElementById('tokErr');if(erro){e.textContent=erro;e.style.display='block'}else e.style.display='none'
+      if(!erro)autoConectar()
+    }
+    function autoConectar(){
+      let n=0;clearInterval(autoConectar._t)
+      autoConectar._t=setInterval(()=>{
+        if(document.getElementById('tokInput').value.trim()){clearInterval(autoConectar._t);document.getElementById('tokSave').click()}
+        else if(++n>16)clearInterval(autoConectar._t)
+      },250)
+    }
     document.getElementById('tokSave').onclick=async()=>{
       const v=document.getElementById('tokInput').value.trim();if(!v)return
       TOKEN=v
