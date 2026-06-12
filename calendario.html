@@ -121,16 +121,43 @@
     .det-name{font-size:17px;font-weight:600;line-height:1.2}
     .det-name .ano{color:var(--muted);font-weight:400}
     .det-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px}
+
+    /* ── Tela de inclusão (form no modal) ── */
+    .inc-tit{font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+    .inc-date{background:var(--field);border:1px solid var(--line);border-radius:6px;color:var(--text);font:inherit;font-size:12.5px;padding:6px 10px;color-scheme:dark}
+    .inc-status{font-size:11.5px;color:var(--muted)}
+    .inc-foot{padding:0 20px 22px;display:flex;justify-content:flex-end}
+    #incSalvar{width:auto;padding:11px 30px;font-size:14px;transition:transform .12s,filter .12s,background .25s,border-color .25s}
+    #incSalvar:hover{filter:brightness(1.08);transform:translateY(-1px)}
+    #incSalvar:active{transform:scale(.96)}
+    #incSalvar.saved{background:#5fb87a;border-color:#5fb87a;animation:popS .4s}
+    @keyframes popS{0%{transform:scale(1)}45%{transform:scale(1.1)}100%{transform:scale(1)}}
+    .inc-block h3{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+    .inc-field{margin-top:9px}
+    .inc-field label{display:block;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+    .inc-field input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);font:inherit;font-size:13px;padding:8px 10px;outline:none}
+    .inc-field input:focus{border-color:#444}
+    .inc-row2{display:flex;gap:9px}.inc-row2 .inc-field{flex:1}
+    /* upload */
+    .upload{position:relative}
+    .up-area{border:1px dashed var(--line);border-radius:8px;padding:26px 12px;text-align:center;cursor:pointer;color:var(--muted);font-size:12.5px;background:var(--bg);transition:border-color .15s,color .15s}
+    .up-area:hover{border-color:#555;color:var(--text)}
+    .up-preview{position:relative;border-radius:8px;overflow:hidden;background:#000}
+    .up-preview img{width:100%;max-height:230px;object-fit:cover;display:block}
+    .up-actions{position:absolute;left:6px;right:6px;bottom:6px;display:flex;gap:6px;justify-content:flex-end}
+    .mini{font:inherit;font-size:10.5px;font-weight:500;padding:4px 9px;border-radius:5px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.66);color:#fff;cursor:pointer;backdrop-filter:blur(2px)}
+    .mini:hover{background:rgba(0,0,0,.85)}
+    .up-loading{font-size:11px;color:#d99a3a;margin-top:6px;text-align:center}
+    .upload input[type=file]{display:none}
   </style>
 </head>
 <body>
   <div class="top">
-    <h1>Aurora <span>· Calendário editorial</span></h1>
+    <h1>Aurora <span>· Calendário</span></h1>
     <div class="sp"></div>
-    <span class="status" id="status">—</span>
-    <a class="btn link" id="navEdit" href="planejamento.html">✎ editar</a>
-    <button class="btn link" id="btnLink" title="Copiar link que conecta sozinho">🔗 link</button>
-    <button class="btn link" id="btnReload">atualizar</button>
+    <span class="status" id="status"></span>
+    <button class="btn link" id="btnReload" title="Atualizar">↻</button>
+    <button class="btn link" id="btnLink" title="Copiar link de acesso (salve nos favoritos)">🔗 acesso</button>
     <button class="btn link" id="btnToken">sair</button>
   </div>
 
@@ -151,12 +178,14 @@
   <div class="det hidden" id="det">
     <div class="det-box">
       <div class="det-head">
-        <span class="data" id="detData"></span>
-        <a class="det-edit" id="detEdit" href="#">✎ editar</a>
+        <span class="inc-tit">Inclusão</span>
+        <input class="inc-date" id="incDate" type="date">
         <div class="sp"></div>
+        <span class="inc-status" id="incStatus"></span>
         <button class="det-x" id="detClose">✕</button>
       </div>
       <div class="det-body" id="detBody"></div>
+      <div class="inc-foot"><button class="btn" id="incSalvar">💾 Salvar</button></div>
     </div>
   </div>
 
@@ -165,7 +194,7 @@
     const TOKEN_KEY='aurora_plan_token'
     const CONTENTS=`https://api.github.com/repos/${OWNER}/${REPO}/contents/`
     const BLOBS=`https://api.github.com/repos/${OWNER}/${REPO}/git/blobs/`
-    let TOKEN='', EDICOES=[]
+    let TOKEN='', EDICOES=[], SHA=null, editObj=null, editNew=false, incTimer=null
     const blobCache={}
     const ckSet=v=>{try{document.cookie=TOKEN_KEY+'='+encodeURIComponent(v)+';max-age=31536000;path=/;samesite=lax'+(location.protocol==='https:'?';secure':'')}catch{}}
     const ckGet=()=>{const m=document.cookie.match('(?:^|; )'+TOKEN_KEY+'=([^;]*)');return m?decodeURIComponent(m[1]):''}
@@ -178,7 +207,6 @@
       if(!TOKEN)TOKEN=lsGet()||ckGet()
       if(location.hash)history.replaceState(null,'',location.pathname)
     })()
-    function atualizarNav(){const e=document.getElementById('navEdit');if(e)e.href='planejamento.html'+(TOKEN?('#tk='+encodeURIComponent(TOKEN)):'')}
     const headers=()=>({Authorization:'Bearer '+TOKEN,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'})
     const b64d=b=>decodeURIComponent(escape(atob((b||'').replace(/\s/g,''))))
     const esc=s=>(s||'').replace(/"/g,'&quot;')
@@ -186,6 +214,30 @@
     const ABREV=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ']
 
     async function ghGetBlobB64(sha){const r=await fetch(BLOBS+sha,{headers:headers()});if(!r.ok)throw 0;return ((await r.json()).content||'').replace(/\s/g,'')}
+
+    // ── Salvar / upload (trazido do editor) ──
+    const b64e=s=>btoa(unescape(encodeURIComponent(s)))
+    const uid=()=>'e'+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36)
+    const fileToB64=file=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file)})
+    function novaEdicao(){return{id:uid(),data:'',imgDia:{img:null,thumb:null,artista:'',ano:'',link:''},artistaDia:{img:null,thumb:null,nome:'',link:''}}}
+    function makeThumb(file,maxDim=1000,q=0.85){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{let w=img.naturalWidth,h=img.naturalHeight;if(Math.max(w,h)>maxDim){const s=maxDim/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s)}const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.fillStyle='#111';x.fillRect(0,0,w,h);x.drawImage(img,0,0,w,h);res(c.toDataURL('image/jpeg',q).split(',')[1]);URL.revokeObjectURL(img.src)};img.onerror=rej;img.src=URL.createObjectURL(file)})}
+    async function ghPutJson(){
+      const body={message:'planejamento',content:b64e(JSON.stringify(EDICOES,null,2)),branch:BRANCH};if(SHA)body.sha=SHA
+      let res=await fetch(CONTENTS+FILE,{method:'PUT',headers:headers(),body:JSON.stringify(body)})
+      if(res.status===409||res.status===422){const g=await fetch(CONTENTS+FILE+'?ref='+BRANCH,{headers:headers()});if(g.ok){SHA=(await g.json()).sha;body.sha=SHA;res=await fetch(CONTENTS+FILE,{method:'PUT',headers:headers(),body:JSON.stringify(body)})}}
+      if(!res.ok)throw 'put '+res.status
+      SHA=(await res.json()).content.sha
+    }
+    async function ghPutFile(path,b64){
+      let sha=null;try{const g=await fetch(CONTENTS+path+'?ref='+BRANCH,{headers:headers()});if(g.ok)sha=(await g.json()).sha}catch{}
+      const body={message:'imagem',content:b64,branch:BRANCH};if(sha)body.sha=sha
+      const r=await fetch(CONTENTS+path,{method:'PUT',headers:headers(),body:JSON.stringify(body)});if(!r.ok)throw 'put '+r.status
+      return (await r.json()).content.sha
+    }
+    function uploadInner(bloco,sha){
+      if(sha)return `<div class="up-preview"><img data-sha="${sha}" alt=""><div class="up-actions"><button class="mini" data-upbtn>Trocar</button><button class="mini" data-dl-b="${bloco}">↓ baixar</button></div></div><input type="file" accept="image/*"><div class="up-loading" hidden>enviando…</div>`
+      return `<div class="up-area" data-upbtn>+ Enviar imagem</div><input type="file" accept="image/*"><div class="up-loading" hidden>enviando…</div>`
+    }
 
     async function carregar(){
       if(!TOKEN){abrir();return}
@@ -197,8 +249,9 @@
         const j=await res.json()
         EDICOES=JSON.parse(b64d(j.content))||[]
         if(!Array.isArray(EDICOES))EDICOES=[]
+        SHA=j.sha
         document.getElementById('overlay').classList.add('hidden')
-        render();atualizarNav();document.getElementById('status').textContent=''
+        render();document.getElementById('status').textContent=''
       }catch{document.getElementById('status').textContent='erro ao carregar'}
     }
 
@@ -250,37 +303,14 @@
       const det=wrap.querySelector('.past-wrap')
       if(det)det.addEventListener('toggle',()=>{if(det.open)det.querySelectorAll('img[data-sha]').forEach(im=>carregarSha(im.dataset.sha))})
     }
-    function jattr(meta){return esc(JSON.stringify({sha:meta.sha,name:meta.name,type:meta.type}))}
-
-    // ── Detalhe do dia (modal) ──
-    function abrirDetalhe(id){
-      const e=EDICOES.find(x=>x.id===id); if(!e)return
-      const idd=e.imgDia||{}, ad=e.artistaDia||{}
-      const fmt = e.data ? new Date(e.data+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}) : 'Sem data'
-      document.getElementById('detData').textContent=fmt
-      document.getElementById('detEdit').href='planejamento.html#'+(TOKEN?('tk='+encodeURIComponent(TOKEN)+'&'):'')+'ed='+e.id
-      const sec=(titulo,obj,nome)=>`<div class="det-sec"><h3>${titulo}</h3>
-        ${obj.thumb&&obj.thumb.sha?`<img class="det-img" data-sha="${obj.thumb.sha}" alt="">`:'<div class="det-img" style="height:140px"></div>'}
-        <div class="det-name">${nome}</div>
-        <div class="det-row">
-          ${obj.img&&obj.img.sha?`<button class="pill" data-dl='${jattr(obj.img)}'>↓ baixar imagem</button>`:''}
-          ${obj.link?`<a class="pill" href="${esc(obj.link)}" target="_blank" rel="noopener">Abrir link ↗</a><button class="pill copy" data-copy="${esc(obj.link)}" title="Copiar link">⧉</button>`:''}
-        </div></div>`
-      const nomeDia = (idd.artista?esc(idd.artista):'Edição Aurora')+(idd.ano?` <span class="ano">· ${esc(idd.ano)}</span>`:'')
-      document.getElementById('detBody').innerHTML = sec('Imagem do dia', idd, nomeDia) + sec('Artista do dia', ad, ad.nome?esc(ad.nome):'—')
-      document.getElementById('det').classList.remove('hidden')
-      document.querySelectorAll('#detBody img[data-sha]').forEach(im=>carregarSha(im.dataset.sha))
-    }
-    function fecharDetalhe(){document.getElementById('det').classList.add('hidden')}
-
     async function carregarSha(sha){
       if(!sha)return
       if(blobCache[sha]){aplicar(sha);return}
       try{blobCache[sha]='data:image/jpeg;base64,'+await ghGetBlobB64(sha);aplicar(sha)}catch{}
     }
     function aplicar(sha){document.querySelectorAll(`img[data-sha="${sha}"]`).forEach(im=>im.src=blobCache[sha])}
-
     async function baixar(meta){
+      if(!meta||!meta.sha)return
       try{
         const b64=await ghGetBlobB64(meta.sha);const bin=atob(b64);const arr=new Uint8Array(bin.length)
         for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i)
@@ -288,19 +318,93 @@
         const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=meta.name||'imagem';a.click();URL.revokeObjectURL(a.href)
       }catch{alert('Erro ao baixar.')}
     }
+
+    // ── Tela de inclusão (criar/editar o dia ali mesmo) ──
+    function abrirInclusao(opts){
+      if(opts.id){editObj=EDICOES.find(e=>e.id===opts.id);editNew=false;if(!editObj)return}
+      else{editObj=novaEdicao();editObj.data=opts.data||'';editNew=true}
+      document.getElementById('incDate').value=editObj.data||''
+      document.getElementById('incStatus').textContent=''
+      renderInc()
+      document.getElementById('det').classList.remove('hidden')
+    }
+    function linkRow(b,val){return `<div class="inc-field"><label>Link</label><div style="display:flex;gap:6px"><input data-b="${b}" data-f="link" value="${esc(val)}" placeholder="https://…" style="flex:1"><button class="mini" data-openf="${b}" title="Abrir">↗</button><button class="mini" data-copyf="${b}" title="Copiar">⧉</button></div></div>`}
+    function renderInc(){
+      const e=editObj
+      document.getElementById('detBody').innerHTML=`
+        <div class="inc-block det-sec"><h3>Imagem do dia</h3>
+          <div class="upload" data-b="imgDia">${uploadInner('imgDia', e.imgDia.thumb&&e.imgDia.thumb.sha)}</div>
+          <div class="inc-row2">
+            <div class="inc-field"><label>Artista</label><input data-b="imgDia" data-f="artista" value="${esc(e.imgDia.artista)}" placeholder="Nome"></div>
+            <div class="inc-field"><label>Ano</label><input data-b="imgDia" data-f="ano" value="${esc(e.imgDia.ano)}" placeholder="1956"></div>
+          </div>
+          ${linkRow('imgDia',e.imgDia.link)}
+        </div>
+        <div class="inc-block det-sec"><h3>Artista do dia</h3>
+          <div class="upload" data-b="artistaDia">${uploadInner('artistaDia', e.artistaDia.thumb&&e.artistaDia.thumb.sha)}</div>
+          <div class="inc-field"><label>Nome</label><input data-b="artistaDia" data-f="nome" value="${esc(e.artistaDia.nome)}" placeholder="Nome do artista"></div>
+          ${linkRow('artistaDia',e.artistaDia.link)}
+        </div>`
+      document.querySelectorAll('#detBody img[data-sha]').forEach(im=>carregarSha(im.dataset.sha))
+    }
+    function agendarInc(){document.getElementById('incStatus').textContent='editando…';clearTimeout(incTimer);incTimer=setTimeout(salvarInc,1000)}
+    async function salvarInc(){
+      clearTimeout(incTimer)
+      if(editObj && editNew && !EDICOES.includes(editObj)){EDICOES.push(editObj);editNew=false}
+      document.getElementById('incStatus').textContent='salvando…'
+      try{await ghPutJson();document.getElementById('incStatus').textContent='salvo ✓';render()}
+      catch(e){document.getElementById('incStatus').textContent='erro ao salvar'}
+    }
+    async function uploadInc(bloco,file,up){
+      if(!editObj)return
+      if(file.size>30*1024*1024){alert('Imagem muito grande (máx 30MB).');return}
+      const loading=up.querySelector('.up-loading');if(loading)loading.hidden=false
+      document.getElementById('incStatus').textContent='enviando imagem…'
+      try{
+        const ext=((file.name.match(/\.([a-z0-9]+)$/i)||[])[1]||'jpg').toLowerCase()
+        const origSha=await ghPutFile(`imgs/${editObj.id}-${bloco}.${ext}`,await fileToB64(file))
+        const thumbB64=await makeThumb(file)
+        const thumbSha=await ghPutFile(`thumbs/${editObj.id}-${bloco}.jpg`,thumbB64)
+        editObj[bloco].img={path:`imgs/${editObj.id}-${bloco}.${ext}`,sha:origSha,name:file.name,type:file.type||'image/jpeg'}
+        editObj[bloco].thumb={path:`thumbs/${editObj.id}-${bloco}.jpg`,sha:thumbSha}
+        blobCache[thumbSha]='data:image/jpeg;base64,'+thumbB64
+        up.innerHTML=uploadInner(bloco,thumbSha)
+        const im=up.querySelector('img[data-sha]');if(im)im.src=blobCache[thumbSha]
+        agendarInc()
+      }catch(err){if(loading)loading.hidden=true;document.getElementById('incStatus').textContent='erro no upload';alert('Erro ao enviar a imagem.')}
+    }
+    function fecharInc(){if(incTimer)salvarInc();document.getElementById('det').classList.add('hidden');editObj=null}
+
+    // cliques na grade
     document.getElementById('wrap').addEventListener('click',ev=>{
-      const vb=ev.target.closest('[data-view]'); if(vb){vista=vb.dataset.view;render();return}
-      const nv=ev.target.closest('[data-new]'); if(nv){location.href='planejamento.html#'+(TOKEN?('tk='+encodeURIComponent(TOKEN)+'&'):'')+'new='+nv.dataset.new;return}
-      const c=ev.target.closest('[data-ed]'); if(c)abrirDetalhe(c.dataset.ed)
+      const vb=ev.target.closest('[data-view]');if(vb){vista=vb.dataset.view;render();return}
+      const nv=ev.target.closest('[data-new]');if(nv){abrirInclusao({data:nv.dataset.new});return}
+      const c=ev.target.closest('[data-ed]');if(c){abrirInclusao({id:c.dataset.ed});return}
     })
+    // cliques/edição dentro da tela de inclusão
     const detEl=document.getElementById('det')
-    detEl.addEventListener('click',ev=>{
-      if(ev.target===detEl){fecharDetalhe();return}
-      const cp=ev.target.closest('[data-copy]'); if(cp){const txt=cp.dataset.copy;if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt)}else{const t=document.createElement('textarea');t.value=txt;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove()}const o=cp.textContent;cp.textContent='✓';setTimeout(()=>cp.textContent=o,1000);return}
-      const b=ev.target.closest('[data-dl]'); if(b){try{baixar(JSON.parse(b.dataset.dl))}catch{}}
+    detEl.addEventListener('click',ev=>{ if(ev.target===detEl)fecharInc() })
+    const dbody=document.getElementById('detBody')
+    dbody.addEventListener('input',ev=>{
+      const inp=ev.target;if(inp.type==='file')return
+      const b=inp.dataset.b,f=inp.dataset.f;if(!b||!f||!editObj)return
+      editObj[b][f]=inp.value;agendarInc()
     })
-    document.getElementById('detClose').onclick=fecharDetalhe
-    document.addEventListener('keydown',e=>{if(e.key==='Escape')fecharDetalhe()})
+    dbody.addEventListener('change',ev=>{
+      const inp=ev.target;if(inp.type!=='file')return
+      const up=inp.closest('.upload');const file=inp.files[0];if(file)uploadInc(up.dataset.b,file,up);inp.value=''
+    })
+    dbody.addEventListener('click',ev=>{
+      const t=ev.target
+      if(t.dataset.upbtn!==undefined){t.closest('.upload').querySelector('input[type=file]').click();return}
+      if(t.dataset.dlB!==undefined){const o=editObj&&editObj[t.dataset.dlB];baixar(o&&o.img);return}
+      if(t.dataset.openf!==undefined){const l=editObj&&editObj[t.dataset.openf]&&editObj[t.dataset.openf].link;if(l)window.open(l,'_blank');return}
+      if(t.dataset.copyf!==undefined){const l=editObj&&editObj[t.dataset.copyf]&&editObj[t.dataset.copyf].link;if(l){if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(l);const o=t.textContent;t.textContent='✓';setTimeout(()=>t.textContent=o,900)}return}
+    })
+    document.getElementById('incDate').addEventListener('change',ev=>{if(editObj){editObj.data=ev.target.value;agendarInc()}})
+    document.getElementById('incSalvar').onclick=async()=>{const b=document.getElementById('incSalvar');await salvarInc();b.classList.add('saved');setTimeout(()=>b.classList.remove('saved'),900)}
+    document.getElementById('detClose').onclick=fecharInc
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('det').classList.contains('hidden'))fecharInc()})
 
     // token
     function abrir(erro){
@@ -341,7 +445,6 @@
     }
     document.getElementById('btnReload').onclick=carregar
 
-    atualizarNav()
     carregar()
   </script>
 </body>
