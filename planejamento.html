@@ -129,7 +129,7 @@
     const BLOBS=`https://api.github.com/repos/${OWNER}/${REPO}/git/blobs/`
 
     let TOKEN='', EDICOES=[], SHA=null, dirty=false, saving=false, saveTimer=null
-    let alvo='', alvoFeito=false
+    let alvo='', alvoFeito=false, novaData='', novaFeita=false
     const blobCache={}
     // Persistência do token: localStorage + cookie (cookie costuma sobreviver onde o localStorage é limpo)
     const ckSet=v=>{try{document.cookie=TOKEN_KEY+'='+encodeURIComponent(v)+';max-age=31536000;path=/;samesite=lax'+(location.protocol==='https:'?';secure':'')}catch{}}
@@ -142,6 +142,7 @@
       const hp={};(location.hash||'').replace(/^#/,'').split('&').forEach(p=>{const i=p.indexOf('=');if(i>0)hp[p.slice(0,i)]=decodeURIComponent(p.slice(i+1));else if(p)hp.ed=p})
       if(hp.tk){TOKEN=hp.tk;salvarToken(TOKEN)}
       alvo=hp.ed||''
+      novaData=hp.new||''
       if(!TOKEN)TOKEN=lsGet()||ckGet()
       if(location.hash)history.replaceState(null,'',location.pathname)
     })()
@@ -357,6 +358,7 @@
 
     function render(){
       const lista=document.getElementById('lista')
+      if(novaData&&!novaFeita){novaFeita=true;criarComData(novaData);return}
       if(!EDICOES.length){lista.innerHTML=`<div class="empty">Nenhuma edição planejada ainda.<br>Clique em <b>+ Nova edição</b> para começar.</div>`;return}
       ordenar()
       const hoje=new Date().toISOString().slice(0,10)
@@ -379,6 +381,15 @@
         sep.querySelector('span').textContent=`${aberto?'▾':'▸'} Edições anteriores (${passadas.length})`
       }
       if(alvo&&!alvoFeito){alvoFeito=true;setTimeout(()=>focarEdicao(alvo),80)}
+    }
+
+    // cria uma edição já com a data (vinda do calendário ao clicar num dia vazio)
+    function criarComData(data){
+      if(EDICOES.some(e=>e.data===data)){ // já existe nesse dia → só foca
+        const ex=EDICOES.find(e=>e.data===data); focarEdicao(ex.id); return
+      }
+      const e=novaEdicao(); e.data=data; EDICOES.unshift(e); agendarSalvar(); render()
+      setTimeout(()=>focarEdicao(e.id),60)
     }
 
     // rola até uma edição (vinda do calendário via #id) e destaca; expande passadas se preciso

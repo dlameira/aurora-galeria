@@ -79,6 +79,15 @@
     .btn{font:inherit;font-size:12.5px;font-weight:500;padding:10px 14px;border-radius:8px;cursor:pointer;border:1px solid var(--line);background:var(--accent);border-color:var(--accent);color:#fff;width:100%}
 
     /* ── Calendário (grade do mês) ── */
+    .viewbar{display:inline-flex;gap:2px;background:var(--field);border:1px solid var(--line);border-radius:9px;padding:3px;margin:6px 0 18px}
+    .vb{font:inherit;font-size:12px;font-weight:500;padding:7px 14px;border:none;background:transparent;color:var(--muted);border-radius:7px;cursor:pointer;transition:background .15s,color .15s}
+    .vb:hover{color:var(--text)}
+    .vb.active{background:var(--accent);color:#fff}
+    .cal-day.vazio{cursor:pointer}
+    .cal-plus{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#3a3a3a;font-size:22px;opacity:0;transition:opacity .15s}
+    .cal-day.vazio:hover{border-color:var(--accent)}
+    .cal-day.vazio:hover .cal-plus{opacity:1;color:var(--accent)}
+    .pill.copy{padding:5px 9px;font-size:13px}
     .cal-month{margin-bottom:38px}
     .cal-title{font-size:14px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text);padding:22px 2px 14px}
     .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}
@@ -194,6 +203,7 @@
     }
 
     const WD=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
+    let vista='dia'  // 'dia' = imagem do dia | 'artista' = imagem do artista do dia
     function mesGridHTML(ym, dias){
       const [ano,mes]=ym.split('-').map(Number)
       const nDias=new Date(ano,mes,0).getDate()
@@ -202,15 +212,19 @@
       for(let i=0;i<off;i++)cells+='<div class="cal-day empty"></div>'
       for(let d=1;d<=nDias;d++){
         const e=dias[d]
+        const dd=`${ym}-${String(d).padStart(2,'0')}`
         if(e){
-          const t=e.imgDia&&e.imgDia.thumb&&e.imgDia.thumb.sha
-          const nome=e.imgDia&&e.imgDia.artista?esc(e.imgDia.artista):'Aurora'
+          const obj = vista==='dia' ? (e.imgDia||{}) : (e.artistaDia||{})
+          const t = obj.thumb && obj.thumb.sha
+          const nome = vista==='dia'
+            ? (e.imgDia&&e.imgDia.artista?esc(e.imgDia.artista):'Aurora')
+            : (e.artistaDia&&e.artistaDia.nome?esc(e.artistaDia.nome):'Artista do dia')
           cells+=`<div class="cal-day has" data-ed="${e.id}" title="${nome}">
             <div class="cal-num">${d}</div>
-            ${t?`<img class="cal-img" data-sha="${e.imgDia.thumb.sha}" alt="">`:'<div class="cal-img"></div>'}
+            ${t?`<img class="cal-img" data-sha="${obj.thumb.sha}" alt="">`:'<div class="cal-img"></div>'}
             <div class="cal-cap">${nome}</div>
           </div>`
-        } else cells+=`<div class="cal-day"><div class="cal-num">${d}</div></div>`
+        } else cells+=`<div class="cal-day vazio" data-new="${dd}" title="Criar edição em ${d}/${mes}"><div class="cal-num">${d}</div><div class="cal-plus">+</div></div>`
       }
       return `<div class="cal-month"><div class="cal-title">${MESES[mes-1]} ${ano}</div>
         <div class="cal-grid">${WD.map(w=>`<div class="cal-wd">${w}</div>`).join('')}${cells}</div></div>`
@@ -227,7 +241,7 @@
       const curYM=new Date().toISOString().slice(0,7)
       const futuros=yms.filter(ym=>ym>=curYM)
       const passados=yms.filter(ym=>ym<curYM)
-      let html=''
+      let html=`<div class="viewbar"><button class="vb ${vista==='dia'?'active':''}" data-view="dia">Imagem do dia</button><button class="vb ${vista==='artista'?'active':''}" data-view="artista">Artista do dia</button></div>`
       if(passados.length)html+=`<details class="past-wrap"><summary>Meses anteriores (${passados.length})</summary><div id="pastCal">${passados.map(ym=>mesGridHTML(ym,byYM[ym])).join('')}</div></details>`
       html+=`<div id="futCal">${futuros.length?futuros.map(ym=>mesGridHTML(ym,byYM[ym])).join(''):'<div class="empty-all">Nenhuma edição futura planejada.</div>'}</div>`
       if(semData.length)html+=`<div class="cal-title" style="border-top:1px solid var(--line);padding-top:22px">Sem data ainda</div><div class="semdata">${semData.map(e=>`<span class="pill" data-ed="${e.id}" style="cursor:pointer">${e.imgDia&&e.imgDia.artista?esc(e.imgDia.artista):'rascunho'}</span>`).join('')}</div>`
@@ -249,8 +263,8 @@
         ${obj.thumb&&obj.thumb.sha?`<img class="det-img" data-sha="${obj.thumb.sha}" alt="">`:'<div class="det-img" style="height:140px"></div>'}
         <div class="det-name">${nome}</div>
         <div class="det-row">
-          ${obj.link?`<a class="pill" href="${esc(obj.link)}" target="_blank" rel="noopener">Link ↗</a>`:''}
-          ${obj.img&&obj.img.sha?`<button class="dl-btn" data-dl='${jattr(obj.img)}'>↓ baixar original</button>`:''}
+          ${obj.img&&obj.img.sha?`<button class="pill" data-dl='${jattr(obj.img)}'>↓ baixar imagem</button>`:''}
+          ${obj.link?`<a class="pill" href="${esc(obj.link)}" target="_blank" rel="noopener">Abrir link ↗</a><button class="pill copy" data-copy="${esc(obj.link)}" title="Copiar link">⧉</button>`:''}
         </div></div>`
       const nomeDia = (idd.artista?esc(idd.artista):'Edição Aurora')+(idd.ano?` <span class="ano">· ${esc(idd.ano)}</span>`:'')
       document.getElementById('detBody').innerHTML = sec('Imagem do dia', idd, nomeDia) + sec('Artista do dia', ad, ad.nome?esc(ad.nome):'—')
@@ -275,11 +289,14 @@
       }catch{alert('Erro ao baixar.')}
     }
     document.getElementById('wrap').addEventListener('click',ev=>{
+      const vb=ev.target.closest('[data-view]'); if(vb){vista=vb.dataset.view;render();return}
+      const nv=ev.target.closest('[data-new]'); if(nv){location.href='planejamento.html#'+(TOKEN?('tk='+encodeURIComponent(TOKEN)+'&'):'')+'new='+nv.dataset.new;return}
       const c=ev.target.closest('[data-ed]'); if(c)abrirDetalhe(c.dataset.ed)
     })
     const detEl=document.getElementById('det')
     detEl.addEventListener('click',ev=>{
       if(ev.target===detEl){fecharDetalhe();return}
+      const cp=ev.target.closest('[data-copy]'); if(cp){const txt=cp.dataset.copy;if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt)}else{const t=document.createElement('textarea');t.value=txt;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove()}const o=cp.textContent;cp.textContent='✓';setTimeout(()=>cp.textContent=o,1000);return}
       const b=ev.target.closest('[data-dl]'); if(b){try{baixar(JSON.parse(b.dataset.dl))}catch{}}
     })
     document.getElementById('detClose').onclick=fecharDetalhe
