@@ -95,7 +95,11 @@
     .cal-day{position:relative;aspect-ratio:1/1;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--panel)}
     .cal-day.empty{border:none;background:transparent}
     .cal-num{position:absolute;top:5px;left:8px;font-size:11px;font-weight:600;color:var(--muted);z-index:2}
-    .cal-day.has{cursor:pointer}
+    .cal-day.has{cursor:grab}
+    .cal-day.has:active{cursor:grabbing}
+    .cal-day.dragging{opacity:.35}
+    .cal-day.drop-hover{outline:2px solid var(--accent);outline-offset:-2px}
+    .cal-day.drop-hover::after{content:'';position:absolute;inset:0;background:rgba(224,101,58,.18);z-index:3}
     .cal-day.has .cal-num{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.9)}
     .cal-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#161616;transition:transform .3s}
     .cal-day.has:hover .cal-img{transform:scale(1.06)}
@@ -272,9 +276,9 @@
           const nome = vista==='dia'
             ? (e.imgDia&&e.imgDia.artista?esc(e.imgDia.artista):'Aurora')
             : (e.artistaDia&&e.artistaDia.nome?esc(e.artistaDia.nome):'Artista do dia')
-          cells+=`<div class="cal-day has" data-ed="${e.id}" title="${nome}">
+          cells+=`<div class="cal-day has" draggable="true" data-ed="${e.id}" title="${nome}">
             <div class="cal-num">${d}</div>
-            ${t?`<img class="cal-img" data-sha="${obj.thumb.sha}" alt="">`:'<div class="cal-img"></div>'}
+            ${t?`<img class="cal-img" draggable="false" data-sha="${obj.thumb.sha}" alt="">`:'<div class="cal-img"></div>'}
             <div class="cal-cap">${nome}</div>
           </div>`
         } else cells+=`<div class="cal-day vazio" data-new="${dd}" title="Criar edição em ${d}/${mes}"><div class="cal-num">${d}</div><div class="cal-plus">+</div></div>`
@@ -381,6 +385,38 @@
       const nv=ev.target.closest('[data-new]');if(nv){abrirInclusao({data:nv.dataset.new});return}
       const c=ev.target.closest('[data-ed]');if(c){abrirInclusao({id:c.dataset.ed});return}
     })
+
+    // ── Arrastar para reagendar (move; se ocupado, troca as duas) ──
+    let dragId=null
+    const wrapEl=document.getElementById('wrap')
+    wrapEl.addEventListener('dragstart',ev=>{
+      const c=ev.target.closest('.cal-day.has'); if(!c){return}
+      dragId=c.dataset.ed; ev.dataTransfer.effectAllowed='move'; try{ev.dataTransfer.setData('text/plain',dragId)}catch{}
+      c.classList.add('dragging')
+    })
+    wrapEl.addEventListener('dragend',()=>{document.querySelectorAll('.dragging,.drop-hover').forEach(x=>x.classList.remove('dragging','drop-hover'));dragId=null})
+    wrapEl.addEventListener('dragover',ev=>{const c=ev.target.closest('.cal-day');if(!dragId||!c||c.classList.contains('empty'))return;ev.preventDefault();ev.dataTransfer.dropEffect='move'})
+    wrapEl.addEventListener('dragenter',ev=>{const c=ev.target.closest('.cal-day');if(!dragId||!c||c.classList.contains('empty'))return;document.querySelectorAll('.drop-hover').forEach(x=>x.classList.remove('drop-hover'));if(c.dataset.ed!==dragId)c.classList.add('drop-hover')})
+    wrapEl.addEventListener('drop',ev=>{
+      const c=ev.target.closest('.cal-day'); if(!dragId||!c||c.classList.contains('empty'))return
+      ev.preventDefault()
+      const dragged=EDICOES.find(e=>e.id===dragId)
+      let alvoEd=null, alvoData=null
+      if(c.dataset.new) alvoData=c.dataset.new
+      else if(c.dataset.ed){alvoEd=EDICOES.find(e=>e.id===c.dataset.ed); alvoData=alvoEd?alvoEd.data:null}
+      document.querySelectorAll('.drop-hover,.dragging').forEach(x=>x.classList.remove('drop-hover','dragging'))
+      const id=dragId; dragId=null
+      if(!dragged||!alvoData)return
+      if(alvoEd&&alvoEd.id===dragged.id)return
+      if(alvoEd){const tmp=dragged.data; dragged.data=alvoEd.data; alvoEd.data=tmp}  // troca
+      else dragged.data=alvoData  // move
+      salvarMover()
+    })
+    async function salvarMover(){
+      document.getElementById('status').textContent='movendo…'
+      try{await ghPutJson();render();document.getElementById('status').textContent=''}
+      catch{document.getElementById('status').textContent='erro ao salvar';render()}
+    }
     // cliques/edição dentro da tela de inclusão
     const detEl=document.getElementById('det')
     detEl.addEventListener('click',ev=>{ if(ev.target===detEl)fecharInc() })
