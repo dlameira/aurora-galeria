@@ -111,10 +111,15 @@
     const BLOBS=`https://api.github.com/repos/${OWNER}/${REPO}/git/blobs/`
     let TOKEN='', EDICOES=[]
     const blobCache={}
+    const ckSet=v=>{try{document.cookie=TOKEN_KEY+'='+encodeURIComponent(v)+';max-age=31536000;path=/;samesite=lax'+(location.protocol==='https:'?';secure':'')}catch{}}
+    const ckGet=()=>{const m=document.cookie.match('(?:^|; )'+TOKEN_KEY+'=([^;]*)');return m?decodeURIComponent(m[1]):''}
+    const lsGet=()=>{try{return localStorage.getItem(TOKEN_KEY)||''}catch{return ''}}
+    function salvarToken(v){try{localStorage.setItem(TOKEN_KEY,v)}catch{};ckSet(v)}
+    function limparToken(){try{localStorage.removeItem(TOKEN_KEY)}catch{};try{document.cookie=TOKEN_KEY+'=;max-age=0;path=/'}catch{}}
     ;(function(){
       const hp={};(location.hash||'').replace(/^#/,'').split('&').forEach(p=>{const i=p.indexOf('=');if(i>0)hp[p.slice(0,i)]=decodeURIComponent(p.slice(i+1))})
-      if(hp.tk){TOKEN=hp.tk;try{localStorage.setItem(TOKEN_KEY,TOKEN)}catch{}}
-      if(!TOKEN)TOKEN=localStorage.getItem(TOKEN_KEY)||''
+      if(hp.tk){TOKEN=hp.tk;salvarToken(TOKEN)}
+      if(!TOKEN)TOKEN=lsGet()||ckGet()
       if(location.hash)history.replaceState(null,'',location.pathname)
     })()
     function atualizarNav(){const e=document.getElementById('navEdit');if(e)e.href='planejamento.html'+(TOKEN?('#tk='+encodeURIComponent(TOKEN)):'')}
@@ -245,13 +250,13 @@
       try{
         const res=await fetch(CONTENTS+FILE+'?ref='+BRANCH,{headers:headers()})
         if(!res.ok)throw 0
-        localStorage.setItem(TOKEN_KEY,TOKEN)
+        salvarToken(TOKEN)
         document.getElementById('overlay').classList.add('hidden')
         carregar()
       }catch{TOKEN='';const e=document.getElementById('tokErr');e.textContent='Não consegui entrar. Confira o token.';e.style.display='block'}
     }
     document.getElementById('tokInput').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('tokSave').click()})
-    document.getElementById('btnToken').onclick=()=>{if(confirm('Sair (remover token deste navegador)?')){localStorage.removeItem(TOKEN_KEY);TOKEN='';abrir()}}
+    document.getElementById('btnToken').onclick=()=>{if(confirm('Sair (remover token deste navegador)?')){limparToken();TOKEN='';abrir()}}
     document.getElementById('btnLink').onclick=()=>{
       if(!TOKEN){alert('Entre primeiro (cole o token) e depois copie o link.');return}
       const url=location.origin+location.pathname+'#tk='+encodeURIComponent(TOKEN)
