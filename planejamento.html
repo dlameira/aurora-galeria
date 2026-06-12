@@ -68,6 +68,9 @@
 
     .foot{text-align:center;padding:10px 0 60px}
     .hint{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.6}
+    /* botão Salvar embaixo do card sendo editado */
+    .salvar-wrap{display:flex;justify-content:center;margin:2px 0 26px}
+    #btnSalvar{padding:11px 30px;font-size:14px}
     /* animação do botão Salvar */
     #btnSalvar{transition:transform .12s ease,filter .12s,box-shadow .18s,background .25s,border-color .25s}
     #btnSalvar:hover{transform:translateY(-2px);filter:brightness(1.08);box-shadow:0 8px 20px rgba(224,101,58,.35)}
@@ -105,9 +108,7 @@
   <div class="wrap">
     <div id="lista"></div>
     <div class="foot">
-      <button class="btn primary" id="btnSalvar" style="padding:12px 30px;font-size:14px">💾 Salvar</button>
-      <div class="hint" style="margin-top:12px">Salva automaticamente no GitHub — sincroniza entre PCs.<br>
-        As imagens ficam em <b>qualidade original</b>. Edições já passadas ficam recolhidas no fim.</div>
+      <div class="hint">Salva automaticamente no GitHub — sincroniza entre PCs. As imagens ficam em <b>qualidade original</b>.</div>
     </div>
   </div>
 
@@ -116,7 +117,7 @@
       <h2>Conectar ao planejamento</h2>
       <p>Cole seu <b>token do GitHub</b> para carregar e salvar (sincroniza entre PCs).</p>
       <div class="err" id="tokErr"></div>
-      <input type="password" id="tokInput" name="token" placeholder="github_pat_..." autocomplete="current-password">
+      <input type="text" id="tokInput" placeholder="github_pat_..." autocomplete="off" spellcheck="false" style="-webkit-text-security:disc">
       <button class="btn primary" id="tokSave" style="width:100%">Conectar</button>
     </div>
   </div>
@@ -303,28 +304,27 @@
       return `${wd} · ${dm}`
     }
 
+    // conteúdo interno do .upload (preview com imagem, ou área de enviar)
+    function uploadInner(bloco, sha){
+      if(sha){
+        return `<div class="up-preview">
+            <img data-sha="${sha}" alt="">
+            <div class="up-actions">
+              <button class="mini" data-upbtn>Trocar</button>
+              <button class="mini" data-dl="${bloco}">↓ original</button>
+            </div>
+          </div>
+          <input type="file" accept="image/*">
+          <div class="up-loading" hidden>enviando…</div>`
+      }
+      return `<div class="up-area" data-upbtn>+ Enviar imagem</div>
+        <input type="file" accept="image/*">
+        <div class="up-loading" hidden>enviando…</div>`
+    }
     function imgField(e,bloco,titulo){
       const t=e[bloco].thumb
-      if(t&&t.sha){
-        return `<div class="field"><label>${titulo}</label>
-          <div class="upload" data-b="${bloco}">
-            <div class="up-preview">
-              <img data-sha="${t.sha}" alt="">
-              <div class="up-actions">
-                <button class="mini" data-upbtn>Trocar</button>
-                <button class="mini" data-dl="${bloco}">↓ original</button>
-              </div>
-            </div>
-            <input type="file" accept="image/*">
-            <div class="up-loading" hidden>enviando…</div>
-          </div></div>`
-      }
       return `<div class="field"><label>${titulo}</label>
-        <div class="upload" data-b="${bloco}">
-          <div class="up-area" data-upbtn>+ Enviar imagem</div>
-          <input type="file" accept="image/*">
-          <div class="up-loading" hidden>enviando…</div>
-        </div></div>`
+        <div class="upload" data-b="${bloco}">${uploadInner(bloco, t&&t.sha)}</div></div>`
     }
 
     function cardHTML(e){
@@ -362,9 +362,13 @@
       const hoje=new Date().toISOString().slice(0,10)
       const futuras=EDICOES.filter(e=>!e.data||e.data>=hoje)
       const passadas=EDICOES.filter(e=>e.data&&e.data<hoje)
-      let html=futuras.length?futuras.map(cardHTML).join(''):`<div class="empty" style="padding:50px 20px">Nenhuma edição próxima. Clique em <b>+ Nova edição</b>.</div>`
+      const salvarHTML=`<div class="salvar-wrap"><button class="btn primary" id="btnSalvar" type="button">💾 Salvar</button></div>`
+      let html=futuras.length
+        ? futuras.map((e,i)=>cardHTML(e)+(i===0?salvarHTML:'')).join('')
+        : `<div class="empty" style="padding:50px 20px">Nenhuma edição próxima. Clique em <b>+ Nova edição</b>.</div>`
       if(passadas.length)html+=`<div class="past-sep" id="pastSep"><span>▸ Edições anteriores (${passadas.length})</span></div><div id="pastList" style="display:none"></div>`
       lista.innerHTML=html
+      document.querySelectorAll('#lista input').forEach(i=>i.setAttribute('autocomplete','off'))
       document.querySelectorAll('#lista > .card img[data-sha]').forEach(im=>carregarSha(im.dataset.sha))
       const sep=document.getElementById('pastSep')
       if(sep)sep.onclick=()=>{
@@ -406,7 +410,10 @@
         e[bloco].img={path:`imgs/${e.id}-${bloco}.${ext}`,sha:origSha,name:file.name,type:file.type||'image/jpeg'}
         e[bloco].thumb={path:`thumbs/${e.id}-${bloco}.jpg`,sha:thumbSha}
         blobCache[thumbSha]='data:image/jpeg;base64,'+thumbB64
-        render();agendarSalvar()
+        // atualiza SÓ o quadradinho desse bloco (sem re-render geral, não perde nada)
+        up.innerHTML=uploadInner(bloco,thumbSha)
+        const im=up.querySelector('img[data-sha]'); if(im) im.src=blobCache[thumbSha]
+        agendarSalvar()
       }catch(err){if(loading)loading.hidden=true;setStatus('err','erro no upload');alert('Erro ao enviar a imagem. Confira a conexão e tente de novo.')}
     }
 
@@ -438,6 +445,7 @@
     })
     lista.addEventListener('click',ev=>{
       const t=ev.target
+      const sb=t.closest('#btnSalvar'); if(sb){salvarManual(sb);return}
       if(t.dataset.upbtn!==undefined){const up=t.closest('.upload');up.querySelector('input[type=file]').click();return}
       if(t.dataset.dl){const card=t.closest('.card');const e=find(card.dataset.id);baixarOriginal(e[t.dataset.dl].img);return}
       if(t.dataset.del){if(confirm('Remover esta edição?')){EDICOES=EDICOES.filter(e=>e.id!==t.dataset.del);render();agendarSalvar()}}
@@ -449,15 +457,13 @@
       const f=document.querySelector(`.card[data-id="${e.id}"] .date-field`);if(f)f.focus()
     }
     document.getElementById('btnNova').onclick=adicionar
-    document.getElementById('btnSalvar').onclick=async()=>{
+    async function salvarManual(b){
       if(!TOKEN){abrirOverlay();return}
-      const b=document.getElementById('btnSalvar')
       clearTimeout(saveTimer)
       b.classList.add('saving')
       await salvar()
       b.classList.remove('saving')
-      const ok=document.getElementById('status').classList.contains('ok')
-      if(ok){
+      if(document.getElementById('status').classList.contains('ok')){
         const orig=b.innerHTML
         b.classList.add('saved'); b.innerHTML='✓ Salvo!'
         setTimeout(()=>{b.classList.remove('saved'); b.innerHTML=orig}, 1500)

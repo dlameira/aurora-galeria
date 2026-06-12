@@ -77,6 +77,41 @@
     .modal ol{font-size:12.5px;color:var(--muted);line-height:1.7;margin:8px 0 0 18px}
     .modal ol b{color:var(--text)}
     .btn{font:inherit;font-size:12.5px;font-weight:500;padding:10px 14px;border-radius:8px;cursor:pointer;border:1px solid var(--line);background:var(--accent);border-color:var(--accent);color:#fff;width:100%}
+
+    /* ── Calendário (grade do mês) ── */
+    .cal-month{margin-bottom:38px}
+    .cal-title{font-size:14px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text);padding:22px 2px 14px}
+    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}
+    .cal-wd{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:center;padding:0 0 4px}
+    .cal-day{position:relative;aspect-ratio:1/1;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--panel)}
+    .cal-day.empty{border:none;background:transparent}
+    .cal-num{position:absolute;top:5px;left:8px;font-size:11px;font-weight:600;color:var(--muted);z-index:2}
+    .cal-day.has{cursor:pointer}
+    .cal-day.has .cal-num{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.9)}
+    .cal-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#161616;transition:transform .3s}
+    .cal-day.has:hover .cal-img{transform:scale(1.06)}
+    .cal-cap{position:absolute;left:0;right:0;bottom:0;z-index:2;background:linear-gradient(transparent,rgba(0,0,0,.85));color:#fff;font-size:10px;font-weight:600;line-height:1.15;padding:16px 6px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .semdata{display:flex;flex-wrap:wrap;gap:7px;padding:0 2px 10px}
+    @media (max-width:680px){.cal-grid{gap:4px}.cal-cap{font-size:8px;padding:12px 4px 4px}.cal-num{font-size:9px;left:5px;top:4px}}
+
+    /* ── Modal de detalhe do dia ── */
+    .det{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:40;display:flex;align-items:center;justify-content:center;padding:20px}
+    .det.hidden{display:none}
+    .det-box{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:680px;width:100%;max-height:90vh;overflow:auto}
+    .det-head{display:flex;align-items:center;gap:12px;padding:15px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);z-index:1}
+    .det-head .data{font-size:14px;font-weight:600;text-transform:capitalize}
+    .det-head .sp{flex:1}
+    .det-edit{font-size:12px;color:var(--muted);white-space:nowrap}
+    .det-edit:hover{color:var(--accent)}
+    .det-x{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1}
+    .det-x:hover{color:var(--text)}
+    .det-body{padding:18px 20px 24px;display:grid;grid-template-columns:1fr 1fr;gap:22px}
+    @media (max-width:600px){.det-body{grid-template-columns:1fr}}
+    .det-sec h3{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+    .det-img{width:100%;border-radius:10px;background:#161616;display:block;margin-bottom:10px;max-height:320px;object-fit:contain}
+    .det-name{font-size:17px;font-weight:600;line-height:1.2}
+    .det-name .ano{color:var(--muted);font-weight:400}
+    .det-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px}
   </style>
 </head>
 <body>
@@ -99,8 +134,20 @@
       <h2>Acessar o calendário</h2>
       <p>Cole o <b>token do GitHub</b> para ver o planejamento.</p>
       <div class="err" id="tokErr"></div>
-      <input type="password" id="tokInput" name="token" placeholder="github_pat_..." autocomplete="current-password">
+      <input type="text" id="tokInput" placeholder="github_pat_..." autocomplete="off" spellcheck="false" style="-webkit-text-security:disc">
       <button class="btn" id="tokSave">Entrar</button>
+    </div>
+  </div>
+
+  <div class="det hidden" id="det">
+    <div class="det-box">
+      <div class="det-head">
+        <span class="data" id="detData"></span>
+        <a class="det-edit" id="detEdit" href="#">✎ editar</a>
+        <div class="sp"></div>
+        <button class="det-x" id="detClose">✕</button>
+      </div>
+      <div class="det-body" id="detBody"></div>
     </div>
   </div>
 
@@ -146,68 +193,71 @@
       }catch{document.getElementById('status').textContent='erro ao carregar'}
     }
 
-    function gruposHTML(lista){
-      const grupos=[]; let curKey=null,cur=null
-      for(const e of lista){
-        const k=mesKey(e.data)
-        if(k!==curKey){cur={label:mesLabel(e.data),cards:[]};grupos.push(cur);curKey=k}
-        cur.cards.push(cardHTML(e))
+    const WD=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
+    function mesGridHTML(ym, dias){
+      const [ano,mes]=ym.split('-').map(Number)
+      const nDias=new Date(ano,mes,0).getDate()
+      const off=new Date(ano,mes-1,1).getDay() // 0=Dom
+      let cells=''
+      for(let i=0;i<off;i++)cells+='<div class="cal-day empty"></div>'
+      for(let d=1;d<=nDias;d++){
+        const e=dias[d]
+        if(e){
+          const t=e.imgDia&&e.imgDia.thumb&&e.imgDia.thumb.sha
+          const nome=e.imgDia&&e.imgDia.artista?esc(e.imgDia.artista):'Aurora'
+          cells+=`<div class="cal-day has" data-ed="${e.id}" title="${nome}">
+            <div class="cal-num">${d}</div>
+            ${t?`<img class="cal-img" data-sha="${e.imgDia.thumb.sha}" alt="">`:'<div class="cal-img"></div>'}
+            <div class="cal-cap">${nome}</div>
+          </div>`
+        } else cells+=`<div class="cal-day"><div class="cal-num">${d}</div></div>`
       }
-      return grupos.map(g=>`<div class="month">${g.label}</div><div class="grid">${g.cards.join('')}</div>`).join('')
+      return `<div class="cal-month"><div class="cal-title">${MESES[mes-1]} ${ano}</div>
+        <div class="cal-grid">${WD.map(w=>`<div class="cal-wd">${w}</div>`).join('')}${cells}</div></div>`
     }
+
     function render(){
       const wrap=document.getElementById('wrap')
       if(!EDICOES.length){wrap.innerHTML='<div class="empty-all">Nenhuma edição planejada ainda.</div>';return}
-      const hoje=new Date().toISOString().slice(0,10)
-      const ordc=(a,b)=>(!a.data&&!b.data)?0:!a.data?1:!b.data?-1:a.data<b.data?-1:1
-      const futuras=EDICOES.filter(e=>!e.data||e.data>=hoje).sort(ordc)
-      const passadas=EDICOES.filter(e=>e.data&&e.data<hoje).sort(ordc)
+      const dated=EDICOES.filter(e=>e.data)
+      const semData=EDICOES.filter(e=>!e.data)
+      const byYM={}
+      dated.forEach(e=>{const ym=e.data.slice(0,7);(byYM[ym]=byYM[ym]||{})[+e.data.slice(8,10)]=e})
+      const yms=Object.keys(byYM).sort()
+      const curYM=new Date().toISOString().slice(0,7)
+      const futuros=yms.filter(ym=>ym>=curYM)
+      const passados=yms.filter(ym=>ym<curYM)
       let html=''
-      if(passadas.length)html+=`<details class="past-wrap"><summary>Edições anteriores (${passadas.length})</summary>${gruposHTML(passadas)}</details>`
-      html+=`<div id="futuras">${gruposHTML(futuras)||'<div class="empty-all">Nenhuma edição próxima planejada.</div>'}</div>`
+      if(passados.length)html+=`<details class="past-wrap"><summary>Meses anteriores (${passados.length})</summary><div id="pastCal">${passados.map(ym=>mesGridHTML(ym,byYM[ym])).join('')}</div></details>`
+      html+=`<div id="futCal">${futuros.length?futuros.map(ym=>mesGridHTML(ym,byYM[ym])).join(''):'<div class="empty-all">Nenhuma edição futura planejada.</div>'}</div>`
+      if(semData.length)html+=`<div class="cal-title" style="border-top:1px solid var(--line);padding-top:22px">Sem data ainda</div><div class="semdata">${semData.map(e=>`<span class="pill" data-ed="${e.id}" style="cursor:pointer">${e.imgDia&&e.imgDia.artista?esc(e.imgDia.artista):'rascunho'}</span>`).join('')}</div>`
       wrap.innerHTML=html
-      document.querySelectorAll('#futuras img[data-sha]').forEach(im=>carregarSha(im.dataset.sha))
+      document.querySelectorAll('#futCal img[data-sha]').forEach(im=>carregarSha(im.dataset.sha))
       const det=wrap.querySelector('.past-wrap')
       if(det)det.addEventListener('toggle',()=>{if(det.open)det.querySelectorAll('img[data-sha]').forEach(im=>carregarSha(im.dataset.sha))})
     }
-    function mesKey(d){return d?d.slice(0,7):'zzz'}
-    function mesLabel(d){if(!d)return 'Sem data';const[y,m]=d.split('-');return `${MESES[+m-1]} ${y}`}
-
-    function cardHTML(e){
-      const dia=e.data?e.data.slice(8,10):'—'
-      const mes=e.data?ABREV[+e.data.slice(5,7)-1]:''
-      const id=e.imgDia||{}, ad=e.artistaDia||{}
-      const capa = id.thumb&&id.thumb.sha
-        ? `<img data-sha="${id.thumb.sha}" alt="">`
-        : `<div class="ph">sem imagem</div>`
-      const dlDia = id.img&&id.img.sha ? `<button class="dl-btn" data-dl='${jattr(id.img)}'>↓ original</button>`:''
-      const artista = id.artista
-        ? `<div class="artista">${esc(id.artista)}${id.ano?` <span class="ano">· ${esc(id.ano)}</span>`:''}</div>`
-        : `<div class="artista empty">Edição Aurora</div>`
-      const linkDia = id.link?`<a class="pill" href="${esc(id.link)}" target="_blank" rel="noopener">Imagem do dia ↗</a>`:''
-      const adThumb = ad.thumb&&ad.thumb.sha?`<img class="mini" data-sha="${ad.thumb.sha}" alt="">`:`<div class="mini"></div>`
-      const adLink = ad.link?`<a class="pill" href="${esc(ad.link)}" target="_blank" rel="noopener">Abrir ↗</a>`:`<span class="pill ghost">sem link</span>`
-      const adDl = ad.img&&ad.img.sha?`<button class="dl-btn" data-dl='${jattr(ad.img)}'>↓</button>`:''
-      return `<div class="card">
-        <div class="cover">${capa}
-          <div class="chip"><div class="d">${dia}</div><div class="m">${mes}</div></div>
-          ${dlDia?`<div class="dl">${dlDia}</div>`:''}
-        </div>
-        <div class="body">
-          <div class="artrow">${artista}<a class="editbtn" href="planejamento.html#${TOKEN?('tk='+encodeURIComponent(TOKEN)+'&'):''}ed=${e.id}" title="Editar esta edição">✎ editar</a></div>
-          <div class="links">${linkDia||'<span class="pill ghost">sem link</span>'}</div>
-          <div class="artblock">
-            ${adThumb}
-            <div class="col">
-              <div class="lbl">Artista do dia</div>
-              ${ad.nome?`<div class="adnome">${esc(ad.nome)}</div>`:''}
-              <div class="links">${adLink} ${adDl}</div>
-            </div>
-          </div>
-        </div>
-      </div>`
-    }
     function jattr(meta){return esc(JSON.stringify({sha:meta.sha,name:meta.name,type:meta.type}))}
+
+    // ── Detalhe do dia (modal) ──
+    function abrirDetalhe(id){
+      const e=EDICOES.find(x=>x.id===id); if(!e)return
+      const idd=e.imgDia||{}, ad=e.artistaDia||{}
+      const fmt = e.data ? new Date(e.data+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}) : 'Sem data'
+      document.getElementById('detData').textContent=fmt
+      document.getElementById('detEdit').href='planejamento.html#'+(TOKEN?('tk='+encodeURIComponent(TOKEN)+'&'):'')+'ed='+e.id
+      const sec=(titulo,obj,nome)=>`<div class="det-sec"><h3>${titulo}</h3>
+        ${obj.thumb&&obj.thumb.sha?`<img class="det-img" data-sha="${obj.thumb.sha}" alt="">`:'<div class="det-img" style="height:140px"></div>'}
+        <div class="det-name">${nome}</div>
+        <div class="det-row">
+          ${obj.link?`<a class="pill" href="${esc(obj.link)}" target="_blank" rel="noopener">Link ↗</a>`:''}
+          ${obj.img&&obj.img.sha?`<button class="dl-btn" data-dl='${jattr(obj.img)}'>↓ baixar original</button>`:''}
+        </div></div>`
+      const nomeDia = (idd.artista?esc(idd.artista):'Edição Aurora')+(idd.ano?` <span class="ano">· ${esc(idd.ano)}</span>`:'')
+      document.getElementById('detBody').innerHTML = sec('Imagem do dia', idd, nomeDia) + sec('Artista do dia', ad, ad.nome?esc(ad.nome):'—')
+      document.getElementById('det').classList.remove('hidden')
+      document.querySelectorAll('#detBody img[data-sha]').forEach(im=>carregarSha(im.dataset.sha))
+    }
+    function fecharDetalhe(){document.getElementById('det').classList.add('hidden')}
 
     async function carregarSha(sha){
       if(!sha)return
@@ -225,8 +275,15 @@
       }catch{alert('Erro ao baixar.')}
     }
     document.getElementById('wrap').addEventListener('click',ev=>{
-      const b=ev.target.closest('[data-dl]');if(b){try{baixar(JSON.parse(b.dataset.dl))}catch{}}
+      const c=ev.target.closest('[data-ed]'); if(c)abrirDetalhe(c.dataset.ed)
     })
+    const detEl=document.getElementById('det')
+    detEl.addEventListener('click',ev=>{
+      if(ev.target===detEl){fecharDetalhe();return}
+      const b=ev.target.closest('[data-dl]'); if(b){try{baixar(JSON.parse(b.dataset.dl))}catch{}}
+    })
+    document.getElementById('detClose').onclick=fecharDetalhe
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')fecharDetalhe()})
 
     // token
     function abrir(erro){
