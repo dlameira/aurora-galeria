@@ -48,7 +48,8 @@
 
     .artblock{margin-top:auto;border-top:1px solid var(--line);padding-top:12px;display:flex;align-items:center;gap:11px}
     .artblock .mini{width:46px;height:46px;border-radius:8px;object-fit:cover;background:#111;flex-shrink:0}
-    .artblock .lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+    .artblock .lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+    .artblock .adnome{font-size:13px;font-weight:600;line-height:1.2;margin-bottom:6px}
     .artblock .col{flex:1;min-width:0}
 
     .empty-all{text-align:center;color:var(--muted);padding:90px 20px;font-size:14px;line-height:1.7}
@@ -171,6 +172,7 @@
             ${adThumb}
             <div class="col">
               <div class="lbl">Artista do dia</div>
+              ${ad.nome?`<div class="adnome">${esc(ad.nome)}</div>`:''}
               <div class="links">${adLink} ${adDl}</div>
             </div>
           </div>

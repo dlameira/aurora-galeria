@@ -247,7 +247,7 @@
     document.getElementById('btnToken').onclick=()=>{if(confirm('Desconectar este navegador?')){localStorage.removeItem(TOKEN_KEY);TOKEN='';clearInterval(pollT);abrirOverlay()}}
 
     // ── Edições ──
-    function novaEdicao(){return{id:uid(),data:'',imgDia:{img:null,thumb:null,artista:'',ano:'',link:''},artistaDia:{img:null,thumb:null,link:''}}}
+    function novaEdicao(){return{id:uid(),data:'',imgDia:{img:null,thumb:null,artista:'',ano:'',link:''},artistaDia:{img:null,thumb:null,nome:'',link:''}}}
     function find(id){return EDICOES.find(e=>e.id===id)}
     function ordenar(){EDICOES.sort((a,b)=>(!a.data&&!b.data)?0:!a.data?1:!b.data?-1:a.data<b.data?-1:a.data>b.data?1:0)}
 
@@ -299,6 +299,7 @@
             <div class="block">
               <div class="block-title">Artista do dia</div>
               ${imgField(e,'artistaDia','Imagem (original)')}
+              <div class="field"><label>Nome</label><input data-b="artistaDia" data-f="nome" value="${esc(e.artistaDia.nome)}" placeholder="Nome do artista"></div>
               <div class="field"><label>Link</label><input data-b="artistaDia" data-f="link" value="${esc(e.artistaDia.link)}" placeholder="https://…"></div>
             </div>
           </div>
