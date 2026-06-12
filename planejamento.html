@@ -86,7 +86,7 @@
 <body>
   <div class="top">
     <h1>Aurora <span>· Planejamento</span></h1>
-    <a class="btn link" href="calendario.html" title="Visão dos redatores">↗ calendário</a>
+    <a class="btn link" id="navCal" href="calendario.html" title="Visão dos redatores">↗ calendário</a>
     <div class="sp"></div>
     <span class="status" id="status"><span class="dot"></span><span id="statusTxt">—</span></span>
     <button class="btn link" id="btnLink" title="Copiar um link que conecta sozinho — salve nos favoritos">🔗 link de acesso</button>
@@ -123,11 +123,14 @@
     const blobCache={}
     // Token pode vir no link (#tk=...) — pra favorito que conecta sozinho; senão, do navegador
     ;(function(){
-      const h=(location.hash||'').slice(1)
-      if(h.indexOf('tk=')===0){TOKEN=decodeURIComponent(h.slice(3));try{localStorage.setItem(TOKEN_KEY,TOKEN)}catch{};history.replaceState(null,'',location.pathname)}
-      else alvo=h
+      const hp={};(location.hash||'').replace(/^#/,'').split('&').forEach(p=>{const i=p.indexOf('=');if(i>0)hp[p.slice(0,i)]=decodeURIComponent(p.slice(i+1));else if(p)hp.ed=p})
+      if(hp.tk){TOKEN=hp.tk;try{localStorage.setItem(TOKEN_KEY,TOKEN)}catch{}}
+      alvo=hp.ed||''
       if(!TOKEN)TOKEN=localStorage.getItem(TOKEN_KEY)||''
+      if(location.hash)history.replaceState(null,'',location.pathname)
     })()
+    // links internos carregam o token (caso o navegador não guarde nada)
+    function atualizarNav(){const c=document.getElementById('navCal');if(c)c.href='calendario.html'+(TOKEN?('#tk='+encodeURIComponent(TOKEN)):'')}
 
     const b64e=s=>btoa(unescape(encodeURIComponent(s)))
     const b64d=b=>decodeURIComponent(escape(atob((b||'').replace(/\s/g,''))))
@@ -190,7 +193,7 @@
       try{
         const {data,sha}=await ghGetJson()
         EDICOES=data;SHA=sha;dirty=false
-        render();setStatus('ok','conectado');iniciarPoll()
+        render();setStatus('ok','conectado');iniciarPoll();atualizarNav()
       }catch(e){
         if(e==='auth')abrirOverlay('Token inválido. Cole o token novamente.')
         else if(e==='forbidden'){setStatus('err','sem permissão ou limite do GitHub — tentando de novo…');setTimeout(carregar,30000)}
@@ -245,7 +248,7 @@
         localStorage.setItem(TOKEN_KEY,TOKEN)
         EDICOES=data;SHA=sha;dirty=false
         document.getElementById('overlay').classList.add('hidden')
-        render();setStatus('ok','conectado');iniciarPoll()
+        render();setStatus('ok','conectado');iniciarPoll();atualizarNav()
       }catch(e){TOKEN='';const er=document.getElementById('tokErr');er.textContent='Não consegui conectar. Confira o token e a permissão Contents.';er.style.display='block'}
     }
     document.getElementById('tokInput').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('tokSave').click()})
@@ -418,6 +421,7 @@
     }
     document.getElementById('btnNova').onclick=adicionar
 
+    atualizarNav()
     carregar()
   </script>
 </body>

@@ -84,7 +84,7 @@
     <h1>Aurora <span>· Calendário editorial</span></h1>
     <div class="sp"></div>
     <span class="status" id="status">—</span>
-    <a class="btn link" href="planejamento.html">✎ editar</a>
+    <a class="btn link" id="navEdit" href="planejamento.html">✎ editar</a>
     <button class="btn link" id="btnLink" title="Copiar link que conecta sozinho">🔗 link</button>
     <button class="btn link" id="btnReload">atualizar</button>
     <button class="btn link" id="btnToken">sair</button>
@@ -112,10 +112,12 @@
     let TOKEN='', EDICOES=[]
     const blobCache={}
     ;(function(){
-      const h=(location.hash||'').slice(1)
-      if(h.indexOf('tk=')===0){TOKEN=decodeURIComponent(h.slice(3));try{localStorage.setItem(TOKEN_KEY,TOKEN)}catch{};history.replaceState(null,'',location.pathname)}
+      const hp={};(location.hash||'').replace(/^#/,'').split('&').forEach(p=>{const i=p.indexOf('=');if(i>0)hp[p.slice(0,i)]=decodeURIComponent(p.slice(i+1))})
+      if(hp.tk){TOKEN=hp.tk;try{localStorage.setItem(TOKEN_KEY,TOKEN)}catch{}}
       if(!TOKEN)TOKEN=localStorage.getItem(TOKEN_KEY)||''
+      if(location.hash)history.replaceState(null,'',location.pathname)
     })()
+    function atualizarNav(){const e=document.getElementById('navEdit');if(e)e.href='planejamento.html'+(TOKEN?('#tk='+encodeURIComponent(TOKEN)):'')}
     const headers=()=>({Authorization:'Bearer '+TOKEN,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'})
     const b64d=b=>decodeURIComponent(escape(atob((b||'').replace(/\s/g,''))))
     const esc=s=>(s||'').replace(/"/g,'&quot;')
@@ -134,7 +136,7 @@
         const j=await res.json()
         EDICOES=JSON.parse(b64d(j.content))||[]
         if(!Array.isArray(EDICOES))EDICOES=[]
-        render();document.getElementById('status').textContent=''
+        render();atualizarNav();document.getElementById('status').textContent=''
       }catch{document.getElementById('status').textContent='erro ao carregar'}
     }
 
@@ -186,7 +188,7 @@
           ${dlDia?`<div class="dl">${dlDia}</div>`:''}
         </div>
         <div class="body">
-          <div class="artrow">${artista}<a class="editbtn" href="planejamento.html#${e.id}" title="Editar esta edição">✎ editar</a></div>
+          <div class="artrow">${artista}<a class="editbtn" href="planejamento.html#${TOKEN?('tk='+encodeURIComponent(TOKEN)+'&'):''}ed=${e.id}" title="Editar esta edição">✎ editar</a></div>
           <div class="links">${linkDia||'<span class="pill ghost">sem link</span>'}</div>
           <div class="artblock">
             ${adThumb}
@@ -247,6 +249,7 @@
     }
     document.getElementById('btnReload').onclick=carregar
 
+    atualizarNav()
     carregar()
   </script>
 </body>
