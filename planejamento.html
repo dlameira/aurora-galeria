@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aurora · Planejamento</title>
+  <style>
+    :root {
+      --bg:     #000;
+      --panel:  #0e0e0e;
+      --field:  #161616;
+      --text:   #f2f2f2;
+      --muted:  #888;
+      --line:   #262626;
+      --accent: #e0653a;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; }
+
+    /* ── Topo ── */
+    .top {
+      position: sticky; top: 0; z-index: 20;
+      background: var(--bg);
+      border-bottom: 1px solid var(--line);
+      padding: 16px 22px;
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    }
+    .top h1 {
+      font-size: 15px; font-weight: 600; letter-spacing: .02em;
+    }
+    .top h1 span { color: var(--muted); font-weight: 400; }
+    .top .sp { flex: 1; }
+    .btn {
+      font: inherit; font-size: 12.5px; font-weight: 500;
+      padding: 8px 14px; border-radius: 7px; cursor: pointer;
+      border: 1px solid var(--line); background: var(--field); color: var(--text);
+      transition: border-color .15s, background .15s;
+    }
+    .btn:hover { border-color: #444; }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn.primary:hover { filter: brightness(1.08); }
+    .saved { font-size: 11px; color: var(--muted); }
+
+    /* ── Lista ── */
+    .wrap { max-width: 980px; margin: 0 auto; padding: 22px; }
+    .empty { text-align: center; color: var(--muted); padding: 80px 20px; font-size: 14px; line-height: 1.7; }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    .card-head {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 16px;
+    }
+    .card-num {
+      font-size: 12px; font-weight: 600; color: var(--accent);
+      letter-spacing: .08em; text-transform: uppercase;
+    }
+    .card-head .sp { flex: 1; }
+    .date-field {
+      background: var(--field); border: 1px solid var(--line);
+      border-radius: 6px; color: var(--text); font: inherit; font-size: 12.5px;
+      padding: 6px 10px; color-scheme: dark;
+    }
+    .del {
+      background: transparent; border: none; color: var(--muted);
+      cursor: pointer; font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 5px;
+    }
+    .del:hover { color: #e05a40; background: #1a1212; }
+
+    .blocks { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 720px) { .blocks { grid-template-columns: 1fr; } }
+
+    .block { background: var(--field); border: 1px solid var(--line); border-radius: 9px; padding: 14px; }
+    .block-title {
+      font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 12px;
+    }
+    .field { margin-bottom: 10px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label {
+      display: block; font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 4px;
+    }
+    .field input {
+      width: 100%; background: var(--bg); border: 1px solid var(--line);
+      border-radius: 6px; color: var(--text); font: inherit; font-size: 13px;
+      padding: 8px 10px; outline: none;
+    }
+    .field input:focus { border-color: #444; }
+    .row2 { display: flex; gap: 10px; }
+    .row2 .field { flex: 1; }
+
+    .thumb {
+      margin-top: 8px; width: 100%; max-height: 150px; object-fit: cover;
+      border-radius: 6px; display: none; background: #000;
+    }
+    .thumb.show { display: block; }
+
+    .foot { text-align: center; padding: 10px 0 60px; }
+    .hint { font-size: 11.5px; color: var(--muted); margin-top: 6px; line-height: 1.6; }
+    input[type=file] { display: none; }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <h1>Aurora <span>· Planejamento das próximas edições</span></h1>
+    <div class="sp"></div>
+    <span class="saved" id="saved"></span>
+    <button class="btn" id="btnImport">Importar</button>
+    <button class="btn" id="btnExport">Exportar</button>
+    <button class="btn primary" id="btnNova">+ Nova edição</button>
+    <input type="file" id="file" accept="application/json">
+  </div>
+
+  <div class="wrap">
+    <div id="lista"></div>
+    <div class="foot">
+      <button class="btn primary" id="btnNova2">+ Nova edição</button>
+      <div class="hint">Tudo é salvo automaticamente no seu navegador.<br>
+        Use <b>Exportar</b> para backup ou mandar pra equipe; <b>Importar</b> para carregar um arquivo.</div>
+    </div>
+  </div>
+
+  <script>
+    const KEY = 'aurora_planejamento_v1'
+    let EDICOES = []
+
+    const uid = () => 'e' + Date.now().toString(36) + Math.floor(Math.random()*1e4).toString(36)
+
+    function novaEdicao() {
+      return {
+        id: uid(), data: '',
+        imgDia:    { url: '', artista: '', ano: '', link: '' },
+        artistaDia:{ url: '', link: '' }
+      }
+    }
+
+    function carregar() {
+      try { EDICOES = JSON.parse(localStorage.getItem(KEY)) || [] } catch { EDICOES = [] }
+      if (!Array.isArray(EDICOES)) EDICOES = []
+      render()
+    }
+
+    function salvar() {
+      localStorage.setItem(KEY, JSON.stringify(EDICOES))
+      const el = document.getElementById('saved')
+      el.textContent = 'salvo ✓'
+      clearTimeout(salvar._t)
+      salvar._t = setTimeout(() => { el.textContent = '' }, 1200)
+    }
+
+    function ordenar() {
+      // edições com data vêm primeiro, mais próximas no topo; sem data ao final
+      EDICOES.sort((a, b) => {
+        if (!a.data && !b.data) return 0
+        if (!a.data) return 1
+        if (!b.data) return -1
+        return a.data < b.data ? -1 : a.data > b.data ? 1 : 0
+      })
+    }
+
+    function thumb(url) {
+      if (!url) return ''
+      return `<img class="thumb show" src="${url}" alt="" onerror="this.classList.remove('show')">`
+    }
+
+    function render() {
+      const lista = document.getElementById('lista')
+      if (!EDICOES.length) {
+        lista.innerHTML = `<div class="empty">Nenhuma edição planejada ainda.<br>
+          Clique em <b>+ Nova edição</b> para começar.</div>`
+        return
+      }
+      lista.innerHTML = EDICOES.map((e, i) => `
+        <div class="card" data-id="${e.id}">
+          <div class="card-head">
+            <span class="card-num">Edição ${String(i + 1).padStart(2, '0')}</span>
+            <input class="date-field" type="date" data-f="data" value="${e.data || ''}">
+            <div class="sp"></div>
+            <button class="del" title="Remover" data-del="${e.id}">✕</button>
+          </div>
+          <div class="blocks">
+            <div class="block">
+              <div class="block-title">Imagem do dia</div>
+              <div class="field">
+                <label>Link da imagem</label>
+                <input data-b="imgDia" data-f="url" value="${esc(e.imgDia.url)}" placeholder="https://…">
+                ${thumb(e.imgDia.url)}
+              </div>
+              <div class="row2">
+                <div class="field">
+                  <label>Artista</label>
+                  <input data-b="imgDia" data-f="artista" value="${esc(e.imgDia.artista)}" placeholder="Nome">
+                </div>
+                <div class="field">
+                  <label>Ano</label>
+                  <input data-b="imgDia" data-f="ano" value="${esc(e.imgDia.ano)}" placeholder="1956">
+                </div>
+              </div>
+              <div class="field">
+                <label>Link</label>
+                <input data-b="imgDia" data-f="link" value="${esc(e.imgDia.link)}" placeholder="https://…">
+              </div>
+            </div>
+            <div class="block">
+              <div class="block-title">Artista do dia</div>
+              <div class="field">
+                <label>Link da imagem</label>
+                <input data-b="artistaDia" data-f="url" value="${esc(e.artistaDia.url)}" placeholder="https://…">
+                ${thumb(e.artistaDia.url)}
+              </div>
+              <div class="field">
+                <label>Link</label>
+                <input data-b="artistaDia" data-f="link" value="${esc(e.artistaDia.link)}" placeholder="https://…">
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('')
+    }
+
+    function esc(s) { return (s || '').replace(/"/g, '&quot;') }
+
+    function find(id) { return EDICOES.find(e => e.id === id) }
+
+    // Eventos delegados
+    document.getElementById('lista').addEventListener('input', ev => {
+      const inp = ev.target
+      const card = inp.closest('.card'); if (!card) return
+      const e = find(card.dataset.id); if (!e) return
+      const f = inp.dataset.f, b = inp.dataset.b
+      if (b) e[b][f] = inp.value
+      else if (f) e[f] = inp.value
+      // atualiza preview da imagem se for campo de url
+      if (f === 'url') {
+        const wrap = inp.parentElement
+        let img = wrap.querySelector('.thumb')
+        if (inp.value) {
+          if (!img) { img = document.createElement('img'); img.className = 'thumb'; wrap.appendChild(img) }
+          img.src = inp.value; img.classList.add('show')
+          img.onerror = () => img.classList.remove('show')
+        } else if (img) img.classList.remove('show')
+      }
+      salvar()
+    })
+
+    document.getElementById('lista').addEventListener('change', ev => {
+      if (ev.target.dataset.f === 'data') { ordenar(); render() }
+    })
+
+    document.getElementById('lista').addEventListener('click', ev => {
+      const id = ev.target.dataset.del
+      if (!id) return
+      if (!confirm('Remover esta edição?')) return
+      EDICOES = EDICOES.filter(e => e.id !== id)
+      salvar(); render()
+    })
+
+    function adicionar() {
+      EDICOES.push(novaEdicao())
+      salvar(); render()
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+    }
+    document.getElementById('btnNova').onclick = adicionar
+    document.getElementById('btnNova2').onclick = adicionar
+
+    // Exportar / Importar
+    document.getElementById('btnExport').onclick = () => {
+      const blob = new Blob([JSON.stringify(EDICOES, null, 2)], { type: 'application/json' })
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = 'aurora-planejamento.json'
+      a.click()
+      URL.revokeObjectURL(a.href)
+    }
+    document.getElementById('btnImport').onclick = () => document.getElementById('file').click()
+    document.getElementById('file').onchange = ev => {
+      const f = ev.target.files[0]; if (!f) return
+      const r = new FileReader()
+      r.onload = () => {
+        try {
+          const data = JSON.parse(r.result)
+          if (!Array.isArray(data)) throw 0
+          if (EDICOES.length && !confirm('Substituir o planejamento atual pelo arquivo importado?')) return
+          EDICOES = data.map(d => ({ ...novaEdicao(), ...d,
+            imgDia: { ...novaEdicao().imgDia, ...(d.imgDia||{}) },
+            artistaDia: { ...novaEdicao().artistaDia, ...(d.artistaDia||{}) } }))
+          ordenar(); salvar(); render()
+        } catch { alert('Arquivo inválido.') }
+      }
+      r.readAsText(f)
+      ev.target.value = ''
+    }
+
+    carregar()
+  </script>
+</body>
+</html>
