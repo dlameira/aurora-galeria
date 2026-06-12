@@ -239,6 +239,19 @@
       const e=document.getElementById('tokErr')
       if(erro){e.textContent=erro;e.style.display='block'}else e.style.display='none'
       setStatus('err','desconectado')
+      if(!erro)armarGesto()
+    }
+    // após o 1º gesto do usuário, o navegador revela o token do autofill → conecta sozinho
+    function armarGesto(){
+      const h=()=>{
+        document.removeEventListener('pointerdown',h);document.removeEventListener('keydown',h)
+        setTimeout(()=>{
+          if(document.getElementById('overlay').classList.contains('hidden'))return
+          const v=document.getElementById('tokInput').value.trim()
+          if(v)document.getElementById('tokSave').click()
+        },60)
+      }
+      document.addEventListener('pointerdown',h);document.addEventListener('keydown',h)
     }
     document.getElementById('tokSave').onclick=async()=>{
       const v=document.getElementById('tokInput').value.trim();if(!v)return

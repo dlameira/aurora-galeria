@@ -226,6 +226,18 @@
     function abrir(erro){
       const ov=document.getElementById('overlay');ov.classList.remove('hidden')
       const e=document.getElementById('tokErr');if(erro){e.textContent=erro;e.style.display='block'}else e.style.display='none'
+      if(!erro)armarGesto()
+    }
+    function armarGesto(){
+      const h=()=>{
+        document.removeEventListener('pointerdown',h);document.removeEventListener('keydown',h)
+        setTimeout(()=>{
+          if(document.getElementById('overlay').classList.contains('hidden'))return
+          const v=document.getElementById('tokInput').value.trim()
+          if(v)document.getElementById('tokSave').click()
+        },60)
+      }
+      document.addEventListener('pointerdown',h);document.addEventListener('keydown',h)
     }
     document.getElementById('tokSave').onclick=async()=>{
       const v=document.getElementById('tokInput').value.trim();if(!v)return
