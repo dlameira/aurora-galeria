@@ -89,6 +89,7 @@
     <a class="btn link" href="calendario.html" title="Visão dos redatores">↗ calendário</a>
     <div class="sp"></div>
     <span class="status" id="status"><span class="dot"></span><span id="statusTxt">—</span></span>
+    <button class="btn link" id="btnLink" title="Copiar um link que conecta sozinho — salve nos favoritos">🔗 link de acesso</button>
     <button class="btn link" id="btnToken">sair</button>
     <button class="btn primary" id="btnNova">+ Nova edição</button>
   </div>
@@ -117,10 +118,16 @@
     const CONTENTS=`https://api.github.com/repos/${OWNER}/${REPO}/contents/`
     const BLOBS=`https://api.github.com/repos/${OWNER}/${REPO}/git/blobs/`
 
-    let TOKEN=localStorage.getItem(TOKEN_KEY)||''
-    let EDICOES=[], SHA=null, dirty=false, saving=false, saveTimer=null
-    let alvo=(location.hash||'').slice(1), alvoFeito=false
+    let TOKEN='', EDICOES=[], SHA=null, dirty=false, saving=false, saveTimer=null
+    let alvo='', alvoFeito=false
     const blobCache={}
+    // Token pode vir no link (#tk=...) — pra favorito que conecta sozinho; senão, do navegador
+    ;(function(){
+      const h=(location.hash||'').slice(1)
+      if(h.indexOf('tk=')===0){TOKEN=decodeURIComponent(h.slice(3));try{localStorage.setItem(TOKEN_KEY,TOKEN)}catch{};history.replaceState(null,'',location.pathname)}
+      else alvo=h
+      if(!TOKEN)TOKEN=localStorage.getItem(TOKEN_KEY)||''
+    })()
 
     const b64e=s=>btoa(unescape(encodeURIComponent(s)))
     const b64d=b=>decodeURIComponent(escape(atob((b||'').replace(/\s/g,''))))
@@ -229,14 +236,6 @@
       const e=document.getElementById('tokErr')
       if(erro){e.textContent=erro;e.style.display='block'}else e.style.display='none'
       setStatus('err','desconectado')
-      if(!erro)autoConectar()  // conecta sozinho quando o navegador preenche o token
-    }
-    function autoConectar(){
-      let n=0;clearInterval(autoConectar._t)
-      autoConectar._t=setInterval(()=>{
-        if(document.getElementById('tokInput').value.trim()){clearInterval(autoConectar._t);document.getElementById('tokSave').click()}
-        else if(++n>16)clearInterval(autoConectar._t)
-      },250)
     }
     document.getElementById('tokSave').onclick=async()=>{
       const v=document.getElementById('tokInput').value.trim();if(!v)return
@@ -251,6 +250,13 @@
     }
     document.getElementById('tokInput').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('tokSave').click()})
     document.getElementById('btnToken').onclick=()=>{if(confirm('Desconectar este navegador?')){localStorage.removeItem(TOKEN_KEY);TOKEN='';clearInterval(pollT);abrirOverlay()}}
+    document.getElementById('btnLink').onclick=()=>{
+      if(!TOKEN){alert('Conecte primeiro (cole o token) e depois copie o link.');return}
+      const url=location.origin+location.pathname+'#tk='+encodeURIComponent(TOKEN)
+      const msg='✅ Link de acesso copiado!\n\nSalve nos FAVORITOS. Abrindo por esse favorito, conecta sozinho — sem digitar nada.\n\n⚠️ O link contém seu token (funciona como senha). Não compartilhe publicamente; mande só pra equipe por canal privado.'
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(()=>alert(msg)).catch(()=>prompt('Copie o link de acesso:',url))}
+      else prompt('Copie o link de acesso:',url)
+    }
 
     // ── Edições ──
     function novaEdicao(){return{id:uid(),data:'',imgDia:{img:null,thumb:null,artista:'',ano:'',link:''},artistaDia:{img:null,thumb:null,nome:'',link:''}}}

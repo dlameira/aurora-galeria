@@ -85,6 +85,7 @@
     <div class="sp"></div>
     <span class="status" id="status">—</span>
     <a class="btn link" href="planejamento.html">✎ editar</a>
+    <button class="btn link" id="btnLink" title="Copiar link que conecta sozinho">🔗 link</button>
     <button class="btn link" id="btnReload">atualizar</button>
     <button class="btn link" id="btnToken">sair</button>
   </div>
@@ -108,8 +109,13 @@
     const TOKEN_KEY='aurora_plan_token'
     const CONTENTS=`https://api.github.com/repos/${OWNER}/${REPO}/contents/`
     const BLOBS=`https://api.github.com/repos/${OWNER}/${REPO}/git/blobs/`
-    let TOKEN=localStorage.getItem(TOKEN_KEY)||'', EDICOES=[]
+    let TOKEN='', EDICOES=[]
     const blobCache={}
+    ;(function(){
+      const h=(location.hash||'').slice(1)
+      if(h.indexOf('tk=')===0){TOKEN=decodeURIComponent(h.slice(3));try{localStorage.setItem(TOKEN_KEY,TOKEN)}catch{};history.replaceState(null,'',location.pathname)}
+      if(!TOKEN)TOKEN=localStorage.getItem(TOKEN_KEY)||''
+    })()
     const headers=()=>({Authorization:'Bearer '+TOKEN,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'})
     const b64d=b=>decodeURIComponent(escape(atob((b||'').replace(/\s/g,''))))
     const esc=s=>(s||'').replace(/"/g,'&quot;')
@@ -218,14 +224,6 @@
     function abrir(erro){
       const ov=document.getElementById('overlay');ov.classList.remove('hidden')
       const e=document.getElementById('tokErr');if(erro){e.textContent=erro;e.style.display='block'}else e.style.display='none'
-      if(!erro)autoConectar()
-    }
-    function autoConectar(){
-      let n=0;clearInterval(autoConectar._t)
-      autoConectar._t=setInterval(()=>{
-        if(document.getElementById('tokInput').value.trim()){clearInterval(autoConectar._t);document.getElementById('tokSave').click()}
-        else if(++n>16)clearInterval(autoConectar._t)
-      },250)
     }
     document.getElementById('tokSave').onclick=async()=>{
       const v=document.getElementById('tokInput').value.trim();if(!v)return
@@ -240,6 +238,13 @@
     }
     document.getElementById('tokInput').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('tokSave').click()})
     document.getElementById('btnToken').onclick=()=>{if(confirm('Sair (remover token deste navegador)?')){localStorage.removeItem(TOKEN_KEY);TOKEN='';abrir()}}
+    document.getElementById('btnLink').onclick=()=>{
+      if(!TOKEN){alert('Entre primeiro (cole o token) e depois copie o link.');return}
+      const url=location.origin+location.pathname+'#tk='+encodeURIComponent(TOKEN)
+      const msg='✅ Link de acesso copiado!\n\nSalve nos FAVORITOS. Abrindo por ele, entra sozinho.\n\n⚠️ O link contém o token (funciona como senha). Não compartilhe publicamente.'
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(()=>alert(msg)).catch(()=>prompt('Copie o link:',url))}
+      else prompt('Copie o link de acesso:',url)
+    }
     document.getElementById('btnReload').onclick=carregar
 
     carregar()
