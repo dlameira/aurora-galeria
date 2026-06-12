@@ -68,6 +68,14 @@
 
     .foot{text-align:center;padding:10px 0 60px}
     .hint{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.6}
+    /* animação do botão Salvar */
+    #btnSalvar{transition:transform .12s ease,filter .12s,box-shadow .18s,background .25s,border-color .25s}
+    #btnSalvar:hover{transform:translateY(-2px);filter:brightness(1.08);box-shadow:0 8px 20px rgba(224,101,58,.35)}
+    #btnSalvar:active{transform:translateY(0) scale(.95)}
+    #btnSalvar.saving{animation:pulseSave .8s ease-in-out infinite}
+    #btnSalvar.saved{background:var(--ok);border-color:var(--ok);animation:popSave .42s ease}
+    @keyframes pulseSave{0%,100%{opacity:1}50%{opacity:.55}}
+    @keyframes popSave{0%{transform:scale(1)}45%{transform:scale(1.14)}100%{transform:scale(1)}}
     input[type=file]{display:none}
 
     .overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:50;display:flex;align-items:center;justify-content:center;padding:20px}
@@ -441,9 +449,19 @@
       const f=document.querySelector(`.card[data-id="${e.id}"] .date-field`);if(f)f.focus()
     }
     document.getElementById('btnNova').onclick=adicionar
-    document.getElementById('btnSalvar').onclick=()=>{
+    document.getElementById('btnSalvar').onclick=async()=>{
       if(!TOKEN){abrirOverlay();return}
-      clearTimeout(saveTimer);salvar()
+      const b=document.getElementById('btnSalvar')
+      clearTimeout(saveTimer)
+      b.classList.add('saving')
+      await salvar()
+      b.classList.remove('saving')
+      const ok=document.getElementById('status').classList.contains('ok')
+      if(ok){
+        const orig=b.innerHTML
+        b.classList.add('saved'); b.innerHTML='✓ Salvo!'
+        setTimeout(()=>{b.classList.remove('saved'); b.innerHTML=orig}, 1500)
+      }
     }
 
     atualizarNav()
