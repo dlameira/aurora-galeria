@@ -35,6 +35,11 @@
     .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
     .card-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
     .card-num{font-size:12px;font-weight:600;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+    .card-num.rascunho{color:var(--muted);font-style:italic;text-transform:none;letter-spacing:0;font-weight:400}
+    .past-sep{margin:28px 4px 12px;display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none}
+    .past-sep::before,.past-sep::after{content:'';flex:1;height:1px;background:var(--line)}
+    .past-sep span{color:var(--muted);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+    .past-sep:hover span{color:var(--text)}
     .card-head .sp{flex:1}
     .date-field{background:var(--field);border:1px solid var(--line);border-radius:6px;color:var(--text);font:inherit;font-size:12.5px;padding:6px 10px;color-scheme:dark}
     .del{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:2px 6px;border-radius:5px}
@@ -83,17 +88,15 @@
     <a class="btn link" href="calendario.html" title="Visão dos redatores">↗ calendário</a>
     <div class="sp"></div>
     <span class="status" id="status"><span class="dot"></span><span id="statusTxt">—</span></span>
-    <button class="btn link" id="btnToken">token</button>
-    <button class="btn" id="btnExport">Exportar</button>
+    <button class="btn link" id="btnToken">sair</button>
     <button class="btn primary" id="btnNova">+ Nova edição</button>
   </div>
 
   <div class="wrap">
     <div id="lista"></div>
     <div class="foot">
-      <button class="btn primary" id="btnNova2">+ Nova edição</button>
-      <div class="hint">Salva automaticamente no GitHub (repositório privado) — sincroniza entre PCs.<br>
-        As imagens ficam em <b>qualidade original</b> (botão “Baixar original”).</div>
+      <div class="hint">Salva automaticamente no GitHub — sincroniza entre PCs.<br>
+        As imagens ficam em <b>qualidade original</b>. Edições já passadas ficam recolhidas no fim.</div>
     </div>
   </div>
 
@@ -138,7 +141,8 @@
     // ── JSON (planejamento) ──
     async function ghGetJson(){
       const res=await fetch(CONTENTS+FILE+'?ref='+BRANCH+'&t='+Date.now(),{headers:headers(),cache:'no-store'})
-      if(res.status===401||res.status===403)throw 'auth'
+      if(res.status===401)throw 'auth'
+      if(res.status===403)throw 'forbidden'
       if(res.status===404)return{data:[],sha:null}
       if(!res.ok)throw 'http '+res.status
       const j=await res.json();let data=[]
@@ -149,7 +153,7 @@
       const body={message:'atualiza planejamento',content:b64e(JSON.stringify(arr,null,2)),branch:BRANCH}
       if(sha)body.sha=sha
       const res=await fetch(CONTENTS+FILE,{method:'PUT',headers:headers(),body:JSON.stringify(body)})
-      if(res.status===401||res.status===403)throw 'auth'
+      if(res.status===401)throw 'auth'
       if(res.status===409||res.status===422)throw 'conflict'
       if(!res.ok)throw 'http '+res.status
       return (await res.json()).content.sha
@@ -188,8 +192,9 @@
         EDICOES=data;SHA=sha;dirty=false
         render();setStatus('ok','conectado');iniciarPoll()
       }catch(e){
-        if(e==='auth')abrirOverlay('Token inválido ou sem acesso ao repositório.')
-        else setStatus('err','erro ao carregar')
+        if(e==='auth')abrirOverlay('Token inválido. Cole o token novamente.')
+        else if(e==='forbidden'){setStatus('err','sem permissão ou limite do GitHub — tentando de novo…');setTimeout(carregar,30000)}
+        else{setStatus('err','sem conexão — tentando de novo…');setTimeout(carregar,8000)}
       }
     }
     function agendarSalvar(){dirty=true;setStatus('save','editando…');clearTimeout(saveTimer);saveTimer=setTimeout(salvar,1200)}
@@ -249,7 +254,15 @@
     // ── Edições ──
     function novaEdicao(){return{id:uid(),data:'',imgDia:{img:null,thumb:null,artista:'',ano:'',link:''},artistaDia:{img:null,thumb:null,nome:'',link:''}}}
     function find(id){return EDICOES.find(e=>e.id===id)}
-    function ordenar(){EDICOES.sort((a,b)=>(!a.data&&!b.data)?0:!a.data?1:!b.data?-1:a.data<b.data?-1:a.data>b.data?1:0)}
+    // rascunhos (sem data) no topo; depois por data crescente (próxima primeiro)
+    function ordenar(){EDICOES.sort((a,b)=>(!a.data&&!b.data)?0:!a.data?-1:!b.data?1:a.data<b.data?-1:a.data>b.data?1:0)}
+    function rotulo(e){
+      if(!e.data)return 'Rascunho'
+      const d=new Date(e.data+'T12:00:00')
+      const wd=d.toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','')
+      const dm=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})
+      return `${wd} · ${dm}`
+    }
 
     function imgField(e,bloco,titulo){
       const t=e[bloco].thumb
@@ -275,13 +288,10 @@
         </div></div>`
     }
 
-    function render(){
-      const lista=document.getElementById('lista')
-      if(!EDICOES.length){lista.innerHTML=`<div class="empty">Nenhuma edição planejada ainda.<br>Clique em <b>+ Nova edição</b> para começar.</div>`;return}
-      lista.innerHTML=EDICOES.map((e,i)=>`
-        <div class="card" data-id="${e.id}">
+    function cardHTML(e){
+      return `<div class="card" data-id="${e.id}">
           <div class="card-head">
-            <span class="card-num">Edição ${String(i+1).padStart(2,'0')}</span>
+            <span class="card-num ${e.data?'':'rascunho'}">${rotulo(e)}</span>
             <input class="date-field" type="date" data-f="data" value="${e.data||''}">
             <div class="sp"></div>
             <button class="del" title="Remover" data-del="${e.id}">✕</button>
@@ -303,9 +313,28 @@
               <div class="field"><label>Link</label><input data-b="artistaDia" data-f="link" value="${esc(e.artistaDia.link)}" placeholder="https://…"></div>
             </div>
           </div>
-        </div>`).join('')
-      // carrega as miniaturas
-      document.querySelectorAll('#lista img[data-sha]').forEach(im=>carregarSha(im.dataset.sha))
+        </div>`
+    }
+
+    function render(){
+      const lista=document.getElementById('lista')
+      if(!EDICOES.length){lista.innerHTML=`<div class="empty">Nenhuma edição planejada ainda.<br>Clique em <b>+ Nova edição</b> para começar.</div>`;return}
+      ordenar()
+      const hoje=new Date().toISOString().slice(0,10)
+      const futuras=EDICOES.filter(e=>!e.data||e.data>=hoje)
+      const passadas=EDICOES.filter(e=>e.data&&e.data<hoje)
+      let html=futuras.length?futuras.map(cardHTML).join(''):`<div class="empty" style="padding:50px 20px">Nenhuma edição próxima. Clique em <b>+ Nova edição</b>.</div>`
+      if(passadas.length)html+=`<div class="past-sep" id="pastSep"><span>▸ Edições anteriores (${passadas.length})</span></div><div id="pastList" style="display:none"></div>`
+      lista.innerHTML=html
+      document.querySelectorAll('#lista > .card img[data-sha]').forEach(im=>carregarSha(im.dataset.sha))
+      const sep=document.getElementById('pastSep')
+      if(sep)sep.onclick=()=>{
+        const pl=document.getElementById('pastList')
+        if(!pl.dataset.loaded){pl.innerHTML=passadas.map(cardHTML).join('');pl.dataset.loaded='1';pl.querySelectorAll('img[data-sha]').forEach(im=>carregarSha(im.dataset.sha))}
+        const aberto=pl.style.display==='none'
+        pl.style.display=aberto?'block':'none'
+        sep.querySelector('span').textContent=`${aberto?'▾':'▸'} Edições anteriores (${passadas.length})`
+      }
     }
 
     async function carregarSha(sha){
@@ -367,13 +396,12 @@
       if(t.dataset.del){if(confirm('Remover esta edição?')){EDICOES=EDICOES.filter(e=>e.id!==t.dataset.del);render();agendarSalvar()}}
     })
 
-    function adicionar(){EDICOES.push(novaEdicao());render();agendarSalvar();window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})}
-    document.getElementById('btnNova').onclick=adicionar
-    document.getElementById('btnNova2').onclick=adicionar
-    document.getElementById('btnExport').onclick=()=>{
-      const blob=new Blob([JSON.stringify(EDICOES,null,2)],{type:'application/json'})
-      const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='aurora-planejamento.json';a.click();URL.revokeObjectURL(a.href)
+    function adicionar(){
+      const e=novaEdicao();EDICOES.unshift(e);render();agendarSalvar()
+      window.scrollTo({top:0,behavior:'smooth'})
+      const f=document.querySelector(`.card[data-id="${e.id}"] .date-field`);if(f)f.focus()
     }
+    document.getElementById('btnNova').onclick=adicionar
 
     carregar()
   </script>

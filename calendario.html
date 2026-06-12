@@ -53,6 +53,13 @@
     .artblock .col{flex:1;min-width:0}
 
     .empty-all{text-align:center;color:var(--muted);padding:90px 20px;font-size:14px;line-height:1.7}
+    .past-wrap{margin-bottom:8px}
+    .past-wrap summary{cursor:pointer;color:var(--muted);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;padding:18px 4px;list-style:none}
+    .past-wrap summary::-webkit-details-marker{display:none}
+    .past-wrap summary::before{content:'▸ '}
+    .past-wrap[open] summary::before{content:'▾ '}
+    .past-wrap summary:hover{color:var(--text)}
+    .past-wrap[open]{border-bottom:1px solid var(--line);margin-bottom:20px}
     .dl-btn{font:inherit;font-size:10.5px;font-weight:500;padding:5px 9px;border-radius:6px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.6);color:#fff;cursor:pointer}
     .dl-btn:hover{background:rgba(0,0,0,.85)}
 
@@ -74,8 +81,9 @@
     <h1>Aurora <span>· Calendário editorial</span></h1>
     <div class="sp"></div>
     <span class="status" id="status">—</span>
+    <a class="btn link" href="planejamento.html">✎ editar</a>
     <button class="btn link" id="btnReload">atualizar</button>
-    <button class="btn link" id="btnToken">token</button>
+    <button class="btn link" id="btnToken">sair</button>
   </div>
 
   <div class="wrap" id="wrap">
@@ -129,18 +137,29 @@
       }catch{document.getElementById('status').textContent='erro ao carregar'}
     }
 
-    function render(){
-      const wrap=document.getElementById('wrap')
-      const lista=EDICOES.slice().sort((a,b)=>(!a.data&&!b.data)?0:!a.data?1:!b.data?-1:a.data<b.data?-1:1)
-      if(!lista.length){wrap.innerHTML='<div class="empty-all">Nenhuma edição planejada ainda.</div>';return}
+    function gruposHTML(lista){
       const grupos=[]; let curKey=null,cur=null
       for(const e of lista){
         const k=mesKey(e.data)
         if(k!==curKey){cur={label:mesLabel(e.data),cards:[]};grupos.push(cur);curKey=k}
         cur.cards.push(cardHTML(e))
       }
-      wrap.innerHTML=grupos.map(g=>`<div class="month">${g.label}</div><div class="grid">${g.cards.join('')}</div>`).join('')
-      document.querySelectorAll('img[data-sha]').forEach(im=>carregarSha(im.dataset.sha))
+      return grupos.map(g=>`<div class="month">${g.label}</div><div class="grid">${g.cards.join('')}</div>`).join('')
+    }
+    function render(){
+      const wrap=document.getElementById('wrap')
+      if(!EDICOES.length){wrap.innerHTML='<div class="empty-all">Nenhuma edição planejada ainda.</div>';return}
+      const hoje=new Date().toISOString().slice(0,10)
+      const ordc=(a,b)=>(!a.data&&!b.data)?0:!a.data?1:!b.data?-1:a.data<b.data?-1:1
+      const futuras=EDICOES.filter(e=>!e.data||e.data>=hoje).sort(ordc)
+      const passadas=EDICOES.filter(e=>e.data&&e.data<hoje).sort(ordc)
+      let html=''
+      if(passadas.length)html+=`<details class="past-wrap"><summary>Edições anteriores (${passadas.length})</summary>${gruposHTML(passadas)}</details>`
+      html+=`<div id="futuras">${gruposHTML(futuras)||'<div class="empty-all">Nenhuma edição próxima planejada.</div>'}</div>`
+      wrap.innerHTML=html
+      document.querySelectorAll('#futuras img[data-sha]').forEach(im=>carregarSha(im.dataset.sha))
+      const det=wrap.querySelector('.past-wrap')
+      if(det)det.addEventListener('toggle',()=>{if(det.open)det.querySelectorAll('img[data-sha]').forEach(im=>carregarSha(im.dataset.sha))})
     }
     function mesKey(d){return d?d.slice(0,7):'zzz'}
     function mesLabel(d){if(!d)return 'Sem data';const[y,m]=d.split('-');return `${MESES[+m-1]} ${y}`}
