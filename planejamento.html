@@ -6,104 +6,86 @@
   <title>Aurora · Planejamento</title>
   <style>
     :root {
-      --bg:     #000;
-      --panel:  #0e0e0e;
-      --field:  #161616;
-      --text:   #f2f2f2;
-      --muted:  #888;
-      --line:   #262626;
-      --accent: #e0653a;
-      --ok:     #5fb87a;
-      --warn:   #d99a3a;
-      --err:    #e0563a;
+      --bg:#000; --panel:#0e0e0e; --field:#161616; --text:#f2f2f2; --muted:#888;
+      --line:#262626; --accent:#e0653a; --ok:#5fb87a; --warn:#d99a3a; --err:#e0563a;
     }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg); color: var(--text); min-height: 100vh;
-      -webkit-font-smoothing: antialiased;
-    }
-    a { color: inherit; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+    a{color:inherit}
 
-    .top {
-      position: sticky; top: 0; z-index: 20; background: var(--bg);
-      border-bottom: 1px solid var(--line); padding: 16px 22px;
-      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-    }
-    .top h1 { font-size: 15px; font-weight: 600; letter-spacing: .02em; }
-    .top h1 span { color: var(--muted); font-weight: 400; }
-    .top .sp { flex: 1; }
-    .btn {
-      font: inherit; font-size: 12.5px; font-weight: 500; padding: 8px 14px;
-      border-radius: 7px; cursor: pointer; border: 1px solid var(--line);
-      background: var(--field); color: var(--text); transition: border-color .15s, background .15s;
-    }
-    .btn:hover { border-color: #444; }
-    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-    .btn.primary:hover { filter: brightness(1.08); }
-    .btn.link { background: transparent; border: none; color: var(--muted); padding: 8px 6px; }
-    .btn.link:hover { color: var(--text); }
+    .top{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line);padding:16px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+    .top h1{font-size:15px;font-weight:600;letter-spacing:.02em}
+    .top h1 span{color:var(--muted);font-weight:400}
+    .top .sp{flex:1}
+    .btn{font:inherit;font-size:12.5px;font-weight:500;padding:8px 14px;border-radius:7px;cursor:pointer;border:1px solid var(--line);background:var(--field);color:var(--text);transition:border-color .15s,background .15s}
+    .btn:hover{border-color:#444}
+    .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+    .btn.primary:hover{filter:brightness(1.08)}
+    .btn.link{background:transparent;border:none;color:var(--muted);padding:8px 6px}
+    .btn.link:hover{color:var(--text)}
 
-    .status { font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
-    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
-    .status.ok    .dot { background: var(--ok) }
-    .status.save  .dot { background: var(--warn); animation: pulse 1s infinite }
-    .status.err   .dot { background: var(--err) }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .status{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+    .dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+    .status.ok .dot{background:var(--ok)} .status.save .dot{background:var(--warn);animation:pulse 1s infinite} .status.err .dot{background:var(--err)}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-    .wrap { max-width: 980px; margin: 0 auto; padding: 22px; }
-    .empty { text-align: center; color: var(--muted); padding: 80px 20px; font-size: 14px; line-height: 1.7; }
+    .wrap{max-width:980px;margin:0 auto;padding:22px}
+    .empty{text-align:center;color:var(--muted);padding:80px 20px;font-size:14px;line-height:1.7}
 
-    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
-    .card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-    .card-num { font-size: 12px; font-weight: 600; color: var(--accent); letter-spacing: .08em; text-transform: uppercase; }
-    .card-head .sp { flex: 1; }
-    .date-field { background: var(--field); border: 1px solid var(--line); border-radius: 6px; color: var(--text); font: inherit; font-size: 12.5px; padding: 6px 10px; color-scheme: dark; }
-    .del { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 5px; }
-    .del:hover { color: #e05a40; background: #1a1212; }
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+    .card-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+    .card-num{font-size:12px;font-weight:600;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+    .card-head .sp{flex:1}
+    .date-field{background:var(--field);border:1px solid var(--line);border-radius:6px;color:var(--text);font:inherit;font-size:12.5px;padding:6px 10px;color-scheme:dark}
+    .del{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:2px 6px;border-radius:5px}
+    .del:hover{color:#e05a40;background:#1a1212}
 
-    .blocks { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    @media (max-width: 720px) { .blocks { grid-template-columns: 1fr; } }
-    .block { background: var(--field); border: 1px solid var(--line); border-radius: 9px; padding: 14px; }
-    .block-title { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
-    .field { margin-bottom: 10px; }
-    .field:last-child { margin-bottom: 0; }
-    .field label { display: block; font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
-    .field input { width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; color: var(--text); font: inherit; font-size: 13px; padding: 8px 10px; outline: none; }
-    .field input:focus { border-color: #444; }
-    .row2 { display: flex; gap: 10px; }
-    .row2 .field { flex: 1; }
-    .thumb { margin-top: 8px; width: 100%; max-height: 150px; object-fit: cover; border-radius: 6px; display: none; background: #000; }
-    .thumb.show { display: block; }
+    .blocks{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    @media (max-width:720px){.blocks{grid-template-columns:1fr}}
+    .block{background:var(--field);border:1px solid var(--line);border-radius:9px;padding:14px}
+    .block-title{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+    .field{margin-bottom:10px}.field:last-child{margin-bottom:0}
+    .field label{display:block;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+    .field input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);font:inherit;font-size:13px;padding:8px 10px;outline:none}
+    .field input:focus{border-color:#444}
+    .row2{display:flex;gap:10px}.row2 .field{flex:1}
 
-    .foot { text-align: center; padding: 10px 0 60px; }
-    .hint { font-size: 11.5px; color: var(--muted); margin-top: 6px; line-height: 1.6; }
-    input[type=file] { display: none; }
+    /* upload */
+    .up-area{border:1px dashed var(--line);border-radius:7px;padding:22px 12px;text-align:center;cursor:pointer;color:var(--muted);font-size:12.5px;background:var(--bg);transition:border-color .15s,color .15s}
+    .up-area:hover{border-color:#555;color:var(--text)}
+    .up-preview{position:relative;border-radius:7px;overflow:hidden;background:#000}
+    .up-preview img{width:100%;max-height:200px;object-fit:cover;display:block}
+    .up-actions{position:absolute;left:6px;right:6px;bottom:6px;display:flex;gap:6px;justify-content:flex-end}
+    .mini{font:inherit;font-size:10.5px;font-weight:500;padding:4px 8px;border-radius:5px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.66);color:#fff;cursor:pointer;backdrop-filter:blur(2px)}
+    .mini:hover{background:rgba(0,0,0,.85)}
+    .up-loading{font-size:11px;color:var(--warn);margin-top:6px;text-align:center}
 
-    /* ── Overlay do token ── */
-    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 20px; }
-    .overlay.hidden { display: none; }
-    .modal { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 26px; max-width: 460px; width: 100%; }
-    .modal h2 { font-size: 17px; margin-bottom: 8px; }
-    .modal p { font-size: 13px; color: var(--muted); line-height: 1.65; margin-bottom: 14px; }
-    .modal ol { font-size: 12.5px; color: var(--muted); line-height: 1.7; margin: 0 0 16px 18px; }
-    .modal ol b { color: var(--text); }
-    .modal input { width: 100%; background: var(--field); border: 1px solid var(--line); border-radius: 8px; color: var(--text); font: inherit; font-size: 13px; padding: 11px 12px; outline: none; margin-bottom: 12px; }
-    .modal input:focus { border-color: #555; }
-    .modal .err { color: var(--err); font-size: 12px; margin-bottom: 10px; display: none; }
-    .modal a { color: var(--accent); }
+    .foot{text-align:center;padding:10px 0 60px}
+    .hint{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.6}
+    input[type=file]{display:none}
+
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:50;display:flex;align-items:center;justify-content:center;padding:20px}
+    .overlay.hidden{display:none}
+    .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px;max-width:460px;width:100%}
+    .modal h2{font-size:17px;margin-bottom:8px}
+    .modal p{font-size:13px;color:var(--muted);line-height:1.65;margin-bottom:14px}
+    .modal ol{font-size:12.5px;color:var(--muted);line-height:1.7;margin:0 0 16px 18px}
+    .modal ol b{color:var(--text)}
+    .modal input{width:100%;background:var(--field);border:1px solid var(--line);border-radius:8px;color:var(--text);font:inherit;font-size:13px;padding:11px 12px;outline:none;margin-bottom:12px}
+    .modal input:focus{border-color:#555}
+    .modal .err{color:var(--err);font-size:12px;margin-bottom:10px;display:none}
+    .modal a{color:var(--accent)}
   </style>
 </head>
 <body>
   <div class="top">
-    <h1>Aurora <span>· Planejamento das próximas edições</span></h1>
+    <h1>Aurora <span>· Planejamento</span></h1>
+    <a class="btn link" href="calendario.html" title="Visão dos redatores">↗ calendário</a>
     <div class="sp"></div>
     <span class="status" id="status"><span class="dot"></span><span id="statusTxt">—</span></span>
-    <button class="btn link" id="btnToken" title="Trocar token / sair">token</button>
-    <button class="btn" id="btnImport">Importar</button>
+    <button class="btn link" id="btnToken">token</button>
     <button class="btn" id="btnExport">Exportar</button>
     <button class="btn primary" id="btnNova">+ Nova edição</button>
-    <input type="file" id="file" accept="application/json">
   </div>
 
   <div class="wrap">
@@ -111,15 +93,14 @@
     <div class="foot">
       <button class="btn primary" id="btnNova2">+ Nova edição</button>
       <div class="hint">Salva automaticamente no GitHub (repositório privado) — sincroniza entre PCs.<br>
-        <b>Exportar</b> faz um backup em arquivo.</div>
+        As imagens ficam em <b>qualidade original</b> (botão “Baixar original”).</div>
     </div>
   </div>
 
-  <!-- Overlay para inserir o token -->
   <div class="overlay" id="overlay">
     <div class="modal">
       <h2>Conectar ao planejamento</h2>
-      <p>Cole seu <b>token do GitHub</b> para carregar e salvar o planejamento (sincroniza entre PCs).</p>
+      <p>Cole seu <b>token do GitHub</b> para carregar e salvar (sincroniza entre PCs).</p>
       <div class="err" id="tokErr"></div>
       <input type="password" id="tokInput" placeholder="github_pat_..." autocomplete="off">
       <button class="btn primary" id="tokSave" style="width:100%;margin-bottom:16px">Conectar</button>
@@ -127,196 +108,188 @@
         <summary style="font-size:12.5px;color:var(--muted);cursor:pointer">Como criar o token (1 min)</summary>
         <ol>
           <li>Abra <a href="https://github.com/settings/personal-access-tokens/new" target="_blank">github.com/settings/personal-access-tokens/new</a></li>
-          <li>Em <b>Repository access</b> → <b>Only select repositories</b> → escolha <b>aurora-planejamento</b></li>
-          <li>Em <b>Permissions</b> → <b>Repository permissions</b> → <b>Contents</b> → <b>Read and write</b></li>
-          <li>Clique <b>Generate token</b>, copie e cole aqui</li>
+          <li><b>Repository access</b> → <b>Only select repositories</b> → <b>aurora-planejamento</b></li>
+          <li><b>Repository permissions</b> → <b>Contents</b> → <b>Read and write</b></li>
+          <li><b>Generate token</b>, copie e cole aqui</li>
         </ol>
       </details>
     </div>
   </div>
 
   <script>
-    const OWNER = 'dlameira', REPO = 'aurora-planejamento', FILE = 'planejamento.json', BRANCH = 'main'
-    const TOKEN_KEY = 'aurora_plan_token'
-    const API = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE}`
+    const OWNER='dlameira', REPO='aurora-planejamento', FILE='planejamento.json', BRANCH='main'
+    const TOKEN_KEY='aurora_plan_token'
+    const CONTENTS=`https://api.github.com/repos/${OWNER}/${REPO}/contents/`
+    const BLOBS=`https://api.github.com/repos/${OWNER}/${REPO}/git/blobs/`
 
-    let TOKEN = localStorage.getItem(TOKEN_KEY) || ''
-    let EDICOES = [], SHA = null, dirty = false, saving = false, saveTimer = null
+    let TOKEN=localStorage.getItem(TOKEN_KEY)||''
+    let EDICOES=[], SHA=null, dirty=false, saving=false, saveTimer=null
+    const blobCache={}
 
-    const b64e = s => btoa(unescape(encodeURIComponent(s)))
-    const b64d = b => decodeURIComponent(escape(atob((b || '').replace(/\s/g, ''))))
-    const esc = s => (s || '').replace(/"/g, '&quot;')
-    const uid = () => 'e' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36)
+    const b64e=s=>btoa(unescape(encodeURIComponent(s)))
+    const b64d=b=>decodeURIComponent(escape(atob((b||'').replace(/\s/g,''))))
+    const esc=s=>(s||'').replace(/"/g,'&quot;')
+    const uid=()=>'e'+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36)
+    const headers=()=>({Authorization:'Bearer '+TOKEN,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'})
+    const fileToB64=file=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file)})
 
-    function headers() {
-      return { Authorization: 'Bearer ' + TOKEN, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }
+    function setStatus(cls,txt){document.getElementById('status').className='status '+cls;document.getElementById('statusTxt').textContent=txt}
+
+    // ── JSON (planejamento) ──
+    async function ghGetJson(){
+      const res=await fetch(CONTENTS+FILE+'?ref='+BRANCH+'&t='+Date.now(),{headers:headers(),cache:'no-store'})
+      if(res.status===401||res.status===403)throw 'auth'
+      if(res.status===404)return{data:[],sha:null}
+      if(!res.ok)throw 'http '+res.status
+      const j=await res.json();let data=[]
+      try{data=JSON.parse(b64d(j.content))}catch{data=[]}
+      return{data:Array.isArray(data)?data:[],sha:j.sha}
+    }
+    async function ghPutJson(arr,sha){
+      const body={message:'atualiza planejamento',content:b64e(JSON.stringify(arr,null,2)),branch:BRANCH}
+      if(sha)body.sha=sha
+      const res=await fetch(CONTENTS+FILE,{method:'PUT',headers:headers(),body:JSON.stringify(body)})
+      if(res.status===401||res.status===403)throw 'auth'
+      if(res.status===409||res.status===422)throw 'conflict'
+      if(!res.ok)throw 'http '+res.status
+      return (await res.json()).content.sha
     }
 
-    function setStatus(cls, txt) {
-      const el = document.getElementById('status')
-      el.className = 'status ' + cls
-      document.getElementById('statusTxt').textContent = txt
+    // ── Arquivos (imagens) ──
+    async function ghPutFile(path,b64){
+      let sha=null
+      try{const g=await fetch(CONTENTS+path+'?ref='+BRANCH,{headers:headers()});if(g.ok)sha=(await g.json()).sha}catch{}
+      const body={message:'imagem',content:b64,branch:BRANCH};if(sha)body.sha=sha
+      const r=await fetch(CONTENTS+path,{method:'PUT',headers:headers(),body:JSON.stringify(body)})
+      if(!r.ok)throw 'put '+r.status
+      return (await r.json()).content.sha
+    }
+    async function ghGetBlobB64(sha){
+      const r=await fetch(BLOBS+sha,{headers:headers()})
+      if(!r.ok)throw 'blob '+r.status
+      return ((await r.json()).content||'').replace(/\s/g,'')
+    }
+    function makeThumb(file,maxDim=1000,q=0.85){
+      return new Promise((res,rej)=>{const img=new Image()
+        img.onload=()=>{let w=img.naturalWidth,h=img.naturalHeight
+          if(Math.max(w,h)>maxDim){const s=maxDim/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s)}
+          const c=document.createElement('canvas');c.width=w;c.height=h
+          const x=c.getContext('2d');x.fillStyle='#111';x.fillRect(0,0,w,h);x.drawImage(img,0,0,w,h)
+          res(c.toDataURL('image/jpeg',q).split(',')[1]);URL.revokeObjectURL(img.src)}
+        img.onerror=rej;img.src=URL.createObjectURL(file)})
     }
 
-    // ── GitHub I/O ──
-    async function ghGet() {
-      const res = await fetch(API + '?ref=' + BRANCH + '&t=' + Date.now(), { headers: headers(), cache: 'no-store' })
-      if (res.status === 401 || res.status === 403) throw 'auth'
-      if (res.status === 404) return { data: [], sha: null }
-      if (!res.ok) throw 'http ' + res.status
-      const j = await res.json()
-      let data = []
-      try { data = JSON.parse(b64d(j.content)) } catch { data = [] }
-      return { data: Array.isArray(data) ? data : [], sha: j.sha }
-    }
-
-    async function ghPut(arr, sha) {
-      const body = { message: 'atualiza planejamento', content: b64e(JSON.stringify(arr, null, 2)), branch: BRANCH }
-      if (sha) body.sha = sha
-      const res = await fetch(API, { method: 'PUT', headers: headers(), body: JSON.stringify(body) })
-      if (res.status === 401 || res.status === 403) throw 'auth'
-      if (res.status === 409 || res.status === 422) throw 'conflict'
-      if (!res.ok) throw 'http ' + res.status
-      const j = await res.json()
-      return j.content.sha
-    }
-
-    // ── Carregar / salvar ──
-    async function carregar() {
-      if (!TOKEN) { abrirOverlay(); return }
-      setStatus('save', 'carregando…')
-      try {
-        const { data, sha } = await ghGet()
-        EDICOES = data; SHA = sha; dirty = false
-        render(); setStatus('ok', 'conectado')
-        iniciarPoll()
-      } catch (e) {
-        if (e === 'auth') { abrirOverlay('Token inválido ou sem acesso ao repositório.'); }
-        else { setStatus('err', 'erro ao carregar'); }
+    // ── Carregar / salvar JSON ──
+    async function carregar(){
+      if(!TOKEN){abrirOverlay();return}
+      setStatus('save','carregando…')
+      try{
+        const {data,sha}=await ghGetJson()
+        EDICOES=data;SHA=sha;dirty=false
+        render();setStatus('ok','conectado');iniciarPoll()
+      }catch(e){
+        if(e==='auth')abrirOverlay('Token inválido ou sem acesso ao repositório.')
+        else setStatus('err','erro ao carregar')
       }
     }
-
-    function agendarSalvar() {
-      dirty = true
-      setStatus('save', 'editando…')
-      clearTimeout(saveTimer)
-      saveTimer = setTimeout(salvar, 1200)
+    function agendarSalvar(){dirty=true;setStatus('save','editando…');clearTimeout(saveTimer);saveTimer=setTimeout(salvar,1200)}
+    async function salvar(){
+      if(saving){clearTimeout(saveTimer);saveTimer=setTimeout(salvar,600);return}
+      saving=true;setStatus('save','salvando…')
+      try{SHA=await ghPutJson(EDICOES,SHA);dirty=false;setStatus('ok','salvo ✓')}
+      catch(e){
+        if(e==='auth')abrirOverlay('Token inválido ou expirado.')
+        else if(e==='conflict')await resolverConflito()
+        else{setStatus('err','erro ao salvar — tentando…');clearTimeout(saveTimer);saveTimer=setTimeout(salvar,3000)}
+      }finally{saving=false}
     }
-
-    async function salvar() {
-      if (saving) { clearTimeout(saveTimer); saveTimer = setTimeout(salvar, 600); return }
-      saving = true
-      setStatus('save', 'salvando…')
-      try {
-        const novoSha = await ghPut(EDICOES, SHA)
-        SHA = novoSha; dirty = false
-        setStatus('ok', 'salvo ✓')
-      } catch (e) {
-        if (e === 'auth') { abrirOverlay('Token inválido ou expirado.'); }
-        else if (e === 'conflict') { await resolverConflito() }
-        else { setStatus('err', 'erro ao salvar — tentando…'); clearTimeout(saveTimer); saveTimer = setTimeout(salvar, 3000) }
-      } finally { saving = false }
+    async function resolverConflito(){
+      try{
+        const remoto=await ghGetJson()
+        if(confirm('Outra pessoa salvou enquanto você editava.\n\nOK = manter SUAS alterações (sobrescreve as dela)\nCancelar = carregar a versão dela (perde as suas)')){
+          SHA=remoto.sha;await salvar()
+        }else{EDICOES=remoto.data;SHA=remoto.sha;dirty=false;render();setStatus('ok','atualizado')}
+      }catch{setStatus('err','erro de sincronização')}
     }
-
-    async function resolverConflito() {
-      try {
-        const remoto = await ghGet()
-        const manterMinhas = confirm(
-          'Outra pessoa salvou enquanto você editava.\n\n' +
-          'OK = manter SUAS alterações (sobrescreve as dela)\n' +
-          'Cancelar = carregar a versão dela (perde as suas)')
-        if (manterMinhas) {
-          SHA = remoto.sha
-          await salvar()
-        } else {
-          EDICOES = remoto.data; SHA = remoto.sha; dirty = false
-          render(); setStatus('ok', 'atualizado')
-        }
-      } catch { setStatus('err', 'erro de sincronização') }
-    }
-
-    // ── Poll: puxa alterações de outros PCs ──
-    let pollT = null
-    function iniciarPoll() {
+    let pollT=null
+    function iniciarPoll(){
       clearInterval(pollT)
-      pollT = setInterval(async () => {
-        if (dirty || saving || !TOKEN) return
-        try {
-          const res = await fetch(API + '?ref=' + BRANCH + '&t=' + Date.now(), { headers: headers(), cache: 'no-store' })
-          if (!res.ok) return
-          const j = await res.json()
-          if (j.sha && j.sha !== SHA) {
-            EDICOES = JSON.parse(b64d(j.content)); SHA = j.sha; render()
-            setStatus('ok', 'atualizado por outro PC')
-          }
-        } catch {}
-      }, 20000)
+      pollT=setInterval(async()=>{
+        if(dirty||saving||!TOKEN)return
+        try{
+          const res=await fetch(CONTENTS+FILE+'?ref='+BRANCH+'&t='+Date.now(),{headers:headers(),cache:'no-store'})
+          if(!res.ok)return
+          const j=await res.json()
+          if(j.sha&&j.sha!==SHA){EDICOES=JSON.parse(b64d(j.content));SHA=j.sha;render();setStatus('ok','atualizado por outro PC')}
+        }catch{}
+      },20000)
     }
 
     // ── Overlay token ──
-    function abrirOverlay(erro) {
-      const ov = document.getElementById('overlay')
-      ov.classList.remove('hidden')
-      const e = document.getElementById('tokErr')
-      if (erro) { e.textContent = erro; e.style.display = 'block' } else { e.style.display = 'none' }
-      document.getElementById('tokInput').value = ''
-      setStatus('err', 'desconectado')
+    function abrirOverlay(erro){
+      const ov=document.getElementById('overlay');ov.classList.remove('hidden')
+      const e=document.getElementById('tokErr')
+      if(erro){e.textContent=erro;e.style.display='block'}else e.style.display='none'
+      document.getElementById('tokInput').value='';setStatus('err','desconectado')
     }
-    document.getElementById('tokSave').onclick = async () => {
-      const v = document.getElementById('tokInput').value.trim()
-      if (!v) return
-      TOKEN = v
-      try {
-        const { data, sha } = await ghGet()
-        localStorage.setItem(TOKEN_KEY, TOKEN)
-        EDICOES = data; SHA = sha; dirty = false
+    document.getElementById('tokSave').onclick=async()=>{
+      const v=document.getElementById('tokInput').value.trim();if(!v)return
+      TOKEN=v
+      try{
+        const {data,sha}=await ghGetJson()
+        localStorage.setItem(TOKEN_KEY,TOKEN)
+        EDICOES=data;SHA=sha;dirty=false
         document.getElementById('overlay').classList.add('hidden')
-        render(); setStatus('ok', 'conectado'); iniciarPoll()
-      } catch (e) {
-        TOKEN = ''
-        document.getElementById('tokErr').textContent = 'Não consegui conectar. Confira o token e as permissões.'
-        document.getElementById('tokErr').style.display = 'block'
-      }
+        render();setStatus('ok','conectado');iniciarPoll()
+      }catch(e){TOKEN='';const er=document.getElementById('tokErr');er.textContent='Não consegui conectar. Confira o token e a permissão Contents.';er.style.display='block'}
     }
-    document.getElementById('tokInput').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('tokSave').click() })
-    document.getElementById('btnToken').onclick = () => {
-      if (confirm('Desconectar este navegador? (o token será removido daqui)')) {
-        localStorage.removeItem(TOKEN_KEY); TOKEN = ''; clearInterval(pollT); abrirOverlay()
-      }
-    }
+    document.getElementById('tokInput').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('tokSave').click()})
+    document.getElementById('btnToken').onclick=()=>{if(confirm('Desconectar este navegador?')){localStorage.removeItem(TOKEN_KEY);TOKEN='';clearInterval(pollT);abrirOverlay()}}
 
     // ── Edições ──
-    function novaEdicao() {
-      return { id: uid(), data: '', imgDia: { url: '', artista: '', ano: '', link: '' }, artistaDia: { url: '', link: '' } }
-    }
-    function find(id) { return EDICOES.find(e => e.id === id) }
-    function ordenar() {
-      EDICOES.sort((a, b) => (!a.data && !b.data) ? 0 : !a.data ? 1 : !b.data ? -1 : a.data < b.data ? -1 : a.data > b.data ? 1 : 0)
-    }
-    function thumb(url) {
-      if (!url) return ''
-      return `<img class="thumb show" src="${esc(url)}" alt="" onerror="this.classList.remove('show')">`
+    function novaEdicao(){return{id:uid(),data:'',imgDia:{img:null,thumb:null,artista:'',ano:'',link:''},artistaDia:{img:null,thumb:null,link:''}}}
+    function find(id){return EDICOES.find(e=>e.id===id)}
+    function ordenar(){EDICOES.sort((a,b)=>(!a.data&&!b.data)?0:!a.data?1:!b.data?-1:a.data<b.data?-1:a.data>b.data?1:0)}
+
+    function imgField(e,bloco,titulo){
+      const t=e[bloco].thumb
+      if(t&&t.sha){
+        return `<div class="field"><label>${titulo}</label>
+          <div class="upload" data-b="${bloco}">
+            <div class="up-preview">
+              <img data-sha="${t.sha}" alt="">
+              <div class="up-actions">
+                <button class="mini" data-upbtn>Trocar</button>
+                <button class="mini" data-dl="${bloco}">↓ original</button>
+              </div>
+            </div>
+            <input type="file" accept="image/*">
+            <div class="up-loading" hidden>enviando…</div>
+          </div></div>`
+      }
+      return `<div class="field"><label>${titulo}</label>
+        <div class="upload" data-b="${bloco}">
+          <div class="up-area" data-upbtn>+ Enviar imagem</div>
+          <input type="file" accept="image/*">
+          <div class="up-loading" hidden>enviando…</div>
+        </div></div>`
     }
 
-    function render() {
-      const lista = document.getElementById('lista')
-      if (!EDICOES.length) {
-        lista.innerHTML = `<div class="empty">Nenhuma edição planejada ainda.<br>Clique em <b>+ Nova edição</b> para começar.</div>`
-        return
-      }
-      lista.innerHTML = EDICOES.map((e, i) => `
+    function render(){
+      const lista=document.getElementById('lista')
+      if(!EDICOES.length){lista.innerHTML=`<div class="empty">Nenhuma edição planejada ainda.<br>Clique em <b>+ Nova edição</b> para começar.</div>`;return}
+      lista.innerHTML=EDICOES.map((e,i)=>`
         <div class="card" data-id="${e.id}">
           <div class="card-head">
-            <span class="card-num">Edição ${String(i + 1).padStart(2, '0')}</span>
-            <input class="date-field" type="date" data-f="data" value="${e.data || ''}">
+            <span class="card-num">Edição ${String(i+1).padStart(2,'0')}</span>
+            <input class="date-field" type="date" data-f="data" value="${e.data||''}">
             <div class="sp"></div>
             <button class="del" title="Remover" data-del="${e.id}">✕</button>
           </div>
           <div class="blocks">
             <div class="block">
               <div class="block-title">Imagem do dia</div>
-              <div class="field"><label>Link da imagem</label>
-                <input data-b="imgDia" data-f="url" value="${esc(e.imgDia.url)}" placeholder="https://…">${thumb(e.imgDia.url)}</div>
+              ${imgField(e,'imgDia','Imagem (original)')}
               <div class="row2">
                 <div class="field"><label>Artista</label><input data-b="imgDia" data-f="artista" value="${esc(e.imgDia.artista)}" placeholder="Nome"></div>
                 <div class="field"><label>Ano</label><input data-b="imgDia" data-f="ano" value="${esc(e.imgDia.ano)}" placeholder="1956"></div>
@@ -325,59 +298,80 @@
             </div>
             <div class="block">
               <div class="block-title">Artista do dia</div>
-              <div class="field"><label>Link da imagem</label>
-                <input data-b="artistaDia" data-f="url" value="${esc(e.artistaDia.url)}" placeholder="https://…">${thumb(e.artistaDia.url)}</div>
+              ${imgField(e,'artistaDia','Imagem (original)')}
               <div class="field"><label>Link</label><input data-b="artistaDia" data-f="link" value="${esc(e.artistaDia.link)}" placeholder="https://…"></div>
             </div>
           </div>
         </div>`).join('')
+      // carrega as miniaturas
+      document.querySelectorAll('#lista img[data-sha]').forEach(im=>carregarSha(im.dataset.sha))
     }
 
-    document.getElementById('lista').addEventListener('input', ev => {
-      const inp = ev.target, card = inp.closest('.card'); if (!card) return
-      const e = find(card.dataset.id); if (!e) return
-      const f = inp.dataset.f, b = inp.dataset.b
-      if (b) e[b][f] = inp.value; else if (f) e[f] = inp.value
-      if (f === 'url') {
-        const wrap = inp.parentElement; let img = wrap.querySelector('.thumb')
-        if (inp.value) { if (!img) { img = document.createElement('img'); img.className = 'thumb'; wrap.appendChild(img) } img.src = inp.value; img.classList.add('show'); img.onerror = () => img.classList.remove('show') }
-        else if (img) img.classList.remove('show')
-      }
+    async function carregarSha(sha){
+      if(!sha)return
+      if(blobCache[sha]){aplicar(sha);return}
+      try{blobCache[sha]='data:image/jpeg;base64,'+await ghGetBlobB64(sha);aplicar(sha)}catch{}
+    }
+    function aplicar(sha){document.querySelectorAll(`img[data-sha="${sha}"]`).forEach(im=>im.src=blobCache[sha])}
+
+    async function uploadImagem(card,bloco,file){
+      const e=find(card.dataset.id);if(!e)return
+      if(file.size>30*1024*1024){alert('Imagem muito grande (máx 30MB).');return}
+      const up=card.querySelector(`.upload[data-b="${bloco}"]`)
+      const loading=up.querySelector('.up-loading');if(loading)loading.hidden=false
+      setStatus('save','enviando imagem…')
+      try{
+        const ext=((file.name.match(/\.([a-z0-9]+)$/i)||[])[1]||'jpg').toLowerCase()
+        const origB64=await fileToB64(file)
+        const origSha=await ghPutFile(`imgs/${e.id}-${bloco}.${ext}`,origB64)
+        const thumbB64=await makeThumb(file)
+        const thumbSha=await ghPutFile(`thumbs/${e.id}-${bloco}.jpg`,thumbB64)
+        e[bloco].img={path:`imgs/${e.id}-${bloco}.${ext}`,sha:origSha,name:file.name,type:file.type||'image/jpeg'}
+        e[bloco].thumb={path:`thumbs/${e.id}-${bloco}.jpg`,sha:thumbSha}
+        blobCache[thumbSha]='data:image/jpeg;base64,'+thumbB64
+        render();agendarSalvar()
+      }catch(err){if(loading)loading.hidden=true;setStatus('err','erro no upload');alert('Erro ao enviar a imagem. Confira a conexão e tente de novo.')}
+    }
+
+    async function baixarOriginal(meta){
+      if(!meta||!meta.sha)return
+      try{
+        const b64=await ghGetBlobB64(meta.sha)
+        const bin=atob(b64);const arr=new Uint8Array(bin.length)
+        for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i)
+        const blob=new Blob([arr],{type:meta.type||'application/octet-stream'})
+        const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=meta.name||'imagem';a.click();URL.revokeObjectURL(a.href)
+      }catch{alert('Erro ao baixar a imagem.')}
+    }
+
+    // ── Eventos ──
+    const lista=document.getElementById('lista')
+    lista.addEventListener('input',ev=>{
+      const inp=ev.target,card=inp.closest('.card');if(!card)return
+      const e=find(card.dataset.id);if(!e)return
+      const f=inp.dataset.f,b=inp.dataset.b
+      if(inp.type==='file'||!f)return
+      if(b)e[b][f]=inp.value;else e[f]=inp.value
       agendarSalvar()
     })
-    document.getElementById('lista').addEventListener('change', ev => {
-      if (ev.target.dataset.f === 'data') { ordenar(); render(); agendarSalvar() }
+    lista.addEventListener('change',ev=>{
+      const inp=ev.target,card=inp.closest('.card');if(!card)return
+      if(inp.type==='file'){const up=inp.closest('.upload');const file=inp.files[0];if(file)uploadImagem(card,up.dataset.b,file);inp.value='';return}
+      if(inp.dataset.f==='data'){ordenar();render();agendarSalvar()}
     })
-    document.getElementById('lista').addEventListener('click', ev => {
-      const id = ev.target.dataset.del; if (!id) return
-      if (!confirm('Remover esta edição?')) return
-      EDICOES = EDICOES.filter(e => e.id !== id); render(); agendarSalvar()
+    lista.addEventListener('click',ev=>{
+      const t=ev.target
+      if(t.dataset.upbtn!==undefined){const up=t.closest('.upload');up.querySelector('input[type=file]').click();return}
+      if(t.dataset.dl){const card=t.closest('.card');const e=find(card.dataset.id);baixarOriginal(e[t.dataset.dl].img);return}
+      if(t.dataset.del){if(confirm('Remover esta edição?')){EDICOES=EDICOES.filter(e=>e.id!==t.dataset.del);render();agendarSalvar()}}
     })
 
-    function adicionar() {
-      EDICOES.push(novaEdicao()); render(); agendarSalvar()
-      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
-    }
-    document.getElementById('btnNova').onclick = adicionar
-    document.getElementById('btnNova2').onclick = adicionar
-
-    document.getElementById('btnExport').onclick = () => {
-      const blob = new Blob([JSON.stringify(EDICOES, null, 2)], { type: 'application/json' })
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'aurora-planejamento.json'; a.click(); URL.revokeObjectURL(a.href)
-    }
-    document.getElementById('btnImport').onclick = () => document.getElementById('file').click()
-    document.getElementById('file').onchange = ev => {
-      const f = ev.target.files[0]; if (!f) return
-      const r = new FileReader()
-      r.onload = () => {
-        try {
-          const data = JSON.parse(r.result); if (!Array.isArray(data)) throw 0
-          if (EDICOES.length && !confirm('Substituir o planejamento atual pelo arquivo importado?')) return
-          EDICOES = data.map(d => ({ ...novaEdicao(), ...d, imgDia: { ...novaEdicao().imgDia, ...(d.imgDia || {}) }, artistaDia: { ...novaEdicao().artistaDia, ...(d.artistaDia || {}) } }))
-          ordenar(); render(); agendarSalvar()
-        } catch { alert('Arquivo inválido.') }
-      }
-      r.readAsText(f); ev.target.value = ''
+    function adicionar(){EDICOES.push(novaEdicao());render();agendarSalvar();window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})}
+    document.getElementById('btnNova').onclick=adicionar
+    document.getElementById('btnNova2').onclick=adicionar
+    document.getElementById('btnExport').onclick=()=>{
+      const blob=new Blob([JSON.stringify(EDICOES,null,2)],{type:'application/json'})
+      const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='aurora-planejamento.json';a.click();URL.revokeObjectURL(a.href)
     }
 
     carregar()
