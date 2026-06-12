@@ -199,6 +199,7 @@
       try{
         const {data,sha}=await ghGetJson()
         EDICOES=data;SHA=sha;dirty=false
+        document.getElementById('overlay').classList.add('hidden')
         render();setStatus('ok','conectado');iniciarPoll();atualizarNav()
       }catch(e){
         if(e==='auth')abrirOverlay('Token inválido. Cole o token novamente.')

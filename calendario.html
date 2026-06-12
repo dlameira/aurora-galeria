@@ -141,6 +141,7 @@
         const j=await res.json()
         EDICOES=JSON.parse(b64d(j.content))||[]
         if(!Array.isArray(EDICOES))EDICOES=[]
+        document.getElementById('overlay').classList.add('hidden')
         render();atualizarNav();document.getElementById('status').textContent=''
       }catch{document.getElementById('status').textContent='erro ao carregar'}
     }
