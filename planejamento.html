@@ -32,7 +32,8 @@
     .wrap{max-width:980px;margin:0 auto;padding:22px}
     .empty{text-align:center;color:var(--muted);padding:80px 20px;font-size:14px;line-height:1.7}
 
-    .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 0 0 0 var(--accent);transition:box-shadow .4s}
+    .card.flash{box-shadow:0 0 0 2px var(--accent)}
     .card-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
     .card-num{font-size:12px;font-weight:600;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
     .card-num.rascunho{color:var(--muted);font-style:italic;text-transform:none;letter-spacing:0;font-weight:400}
@@ -118,6 +119,7 @@
 
     let TOKEN=localStorage.getItem(TOKEN_KEY)||''
     let EDICOES=[], SHA=null, dirty=false, saving=false, saveTimer=null
+    let alvo=(location.hash||'').slice(1), alvoFeito=false
     const blobCache={}
 
     const b64e=s=>btoa(unescape(encodeURIComponent(s)))
@@ -334,6 +336,14 @@
         pl.style.display=aberto?'block':'none'
         sep.querySelector('span').textContent=`${aberto?'▾':'▸'} Edições anteriores (${passadas.length})`
       }
+      if(alvo&&!alvoFeito){alvoFeito=true;setTimeout(()=>focarEdicao(alvo),80)}
+    }
+
+    // rola até uma edição (vinda do calendário via #id) e destaca; expande passadas se preciso
+    function focarEdicao(id){
+      let card=document.querySelector(`#lista > .card[data-id="${id}"]`)
+      if(!card){const sep=document.getElementById('pastSep');if(sep){sep.onclick();card=document.querySelector(`#pastList .card[data-id="${id}"]`)}}
+      if(card){card.scrollIntoView({behavior:'smooth',block:'center'});card.classList.add('flash');setTimeout(()=>card.classList.remove('flash'),2200)}
     }
 
     async function carregarSha(sha){
