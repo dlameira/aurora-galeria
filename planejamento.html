@@ -91,6 +91,7 @@
     <span class="status" id="status"><span class="dot"></span><span id="statusTxt">—</span></span>
     <button class="btn link" id="btnLink" title="Copiar um link que conecta sozinho — salve nos favoritos">🔗 link de acesso</button>
     <button class="btn link" id="btnToken">sair</button>
+    <button class="btn" id="btnSalvar">💾 Salvar</button>
     <button class="btn primary" id="btnNova">+ Nova edição</button>
   </div>
 
@@ -440,6 +441,10 @@
       const f=document.querySelector(`.card[data-id="${e.id}"] .date-field`);if(f)f.focus()
     }
     document.getElementById('btnNova').onclick=adicionar
+    document.getElementById('btnSalvar').onclick=()=>{
+      if(!TOKEN){abrirOverlay();return}
+      clearTimeout(saveTimer);salvar()
+    }
 
     atualizarNav()
     carregar()
